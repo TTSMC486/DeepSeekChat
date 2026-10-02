@@ -1,0 +1,44 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack project.zip
+        run: |
+          set -e
+          if [ -f project.zip ]; then unzip -o -q project.zip -d . ; fi
+          test -f android/settings.gradle.kts || { echo "::error::android/ not found in project.zip"; exit 1; }
+          test -f web/index.html          || { echo "::error::web/index.html not found"; exit 1; }
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
+      - name: Sync web UI into assets
+        run: cp -f web/index.html android/app/src/main/assets/index.html
+
+      - name: Build debug APK
+        run: gradle -p android assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeepSeekChat-apk
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/logs/*.txt
+          if-no-files-found: warn

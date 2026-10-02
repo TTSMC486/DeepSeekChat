@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 对话气泡 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,26c-15.5,0 -28,10.3 -28,23c0,7.2 4,13.6 10.3,17.8l-1.9,12.4c-0.2,1.4 1.4,2.4 2.5,1.5l12.6,-9.4c1.5,0.2 3,0.3 4.5,0.3c15.5,0 28,-10.3 28,-23S69.5,26 54,26z" />
+    <!-- 三点 -->
+    <path android:fillColor="#FF4D6BFE" android:pathData="M42,49m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    <path android:fillColor="#FF4D6BFE" android:pathData="M54,49m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    <path android:fillColor="#FF4D6BFE" android:pathData="M66,49m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+</vector>
