@@ -133,3 +133,14 @@ Android 13+ 要 `READ_MEDIA_IMAGES`，12 及以下要 `READ_EXTERNAL_STORAGE`。
 
 **Q：换成中转接口？**
 改 Base URL 即可，但必须是 **HTTPS**（Manifest 里 `usesCleartextTraffic="false"`）。
+
+---
+
+## 七、关于签名与升级
+
+仓库里带了一把固定的 `android/app/debug.keystore`（storepass / keypass 都是 `android`，
+alias `androiddebugkey`），CI 每次都用它签名。所以：
+
+- **以后出新版，直接装就能覆盖升级**，不会清掉你的 API Key、人设和记忆。
+- 只有从「旧版随机签名」跨到「本版固定签名」这一次需要卸载重装（签名不同 Android 会拒装）。
+- 这把钥匙只用于 debug 自用，**不要拿去上架**；正式发布请换自己的 release keystore。
