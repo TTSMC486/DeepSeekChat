@@ -5,18 +5,14 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Unpack project.zip
-        run: |
-          set -e
-          if [ -f project.zip ]; then unzip -o -q project.zip -d . ; fi
-          test -f android/settings.gradle.kts || { echo "::error::android/ not found in project.zip"; exit 1; }
-          test -f web/index.html          || { echo "::error::web/index.html not found"; exit 1; }
 
       - uses: actions/setup-java@v4
         with:
@@ -27,18 +23,34 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Sync web UI into assets
-        run: cp -f web/index.html android/app/src/main/assets/index.html
-
       - name: Build debug APK
-        run: gradle -p android assembleDebug --no-daemon --stacktrace
+        id: build
+        run: |
+          set -o pipefail
+          mkdir -p ci-logs
+          gradle -p android assembleDebug --no-daemon --stacktrace 2>&1 | tee ci-logs/build.log
+
+      - name: Publish build log
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p ci-logs
+          tail -c 150000 ci-logs/build.log > ci-logs/build.tail.log 2>/dev/null || true
+          { echo "build outcome: ${{ steps.build.outcome }}"
+            echo "----- java -----";  java -version 2>&1
+            echo "----- gradle -----"; gradle --version 2>&1 | head -15
+          } > ci-logs/diag.txt 2>&1
+          git config user.name  ci-bot
+          git config user.email ci@localhost
+          git checkout -B ci-log
+          git add -f ci-logs/
+          git commit -m "ci log" || true
+          git push -f origin ci-log
 
       - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: DeepSeekChat-apk
-          path: |
-            android/app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/logs/*.txt
+          path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn

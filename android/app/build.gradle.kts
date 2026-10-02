@@ -37,6 +37,10 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
 
+    buildFeatures {
+        buildConfig = true   // AGP 8 默认关闭，MainActivity 里用到了 BuildConfig.DEBUG
+    }
+
     packaging {
         resources.excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "META-INF/DEPENDENCIES")
     }
