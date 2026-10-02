@@ -1,0 +1,21 @@
+build outcome: success
+----- java -----
+openjdk version "17.0.20.1" 2026-08-18
+OpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)
+OpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)
+----- gradle -----
+
+------------------------------------------------------------
+Gradle 8.7
+------------------------------------------------------------
+
+Build time:   2024-03-22 15:52:46 UTC
+Revision:     650af14d7653aa949fce5e886e685efc9cf97c10
+
+Kotlin:       1.9.22
+Groovy:       3.0.17
+Ant:          Apache Ant(TM) version 1.10.13 compiled on January 4 2023
+JVM:          17.0.20.1 (Eclipse Adoptium 17.0.20.1+1)
+OS:           Linux 6.17.0-1022-azure amd64
+
+19ec93306a03747e09667a11bb43846e0da848bf606ad3ee9538e4bf5e1b19f2  ci-logs/DeepSeekChat-debug.apk
