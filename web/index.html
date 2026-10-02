@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#0f1115">
 <meta name="color-scheme" content="dark light">
-<title>DeepSeek Chat</title>
+<title>我的露缇娜</title>
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --border:#272c38;
@@ -130,24 +130,79 @@ details.reason .rbody{padding:0 11px 10px;font-size:13px;color:var(--muted);whit
   z-index:99;opacity:0;pointer-events:none;transition:opacity .2s;max-width:86vw;text-align:center}
 .toast.show{opacity:1}
 .badge{font-size:11px;color:var(--muted);text-align:center;padding:8px 0 0;line-height:1.5}
+
+/* ================= 背景图 & 角色样式 ================= */
+#bgLayer{position:fixed;inset:-8%;z-index:0;background-position:center;background-size:cover;
+  background-repeat:no-repeat;opacity:0;transition:opacity .45s ease}
+#bgLayer.on{opacity:1}
+#bgDim{position:fixed;inset:0;z-index:1;pointer-events:none;transition:background .25s}
+.topbar,main,.composer{position:relative;z-index:2}
+body.has-bg{background:#0b0d11}
+body.has-bg .topbar,body.has-bg .composer{background:var(--bar-a,var(--panel));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+body.has-bg .msg.assistant .bubble{background:var(--bubble-a,var(--panel));border-color:transparent;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+body.has-bg .msg.user .bubble{background:var(--user-a,var(--user));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+body.has-bg .empty{color:#dfe4f0}
+body.has-bg .empty h2{color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.75)}
+body.has-bg .chip{background:var(--bubble-a,var(--panel));border-color:transparent;backdrop-filter:blur(10px)}
+body.has-bg #drawer,body.has-bg .sheet,body.has-bg .picker{background:var(--bar-a,var(--panel));
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.avatar.img{background-size:cover;background-position:center;color:transparent;font-size:0}
+.presets{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.presets button{font-size:12.5px;border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--panel2)}
+.presets button:active{border-color:var(--accent);color:var(--accent2)}
+.tabs{display:flex;gap:6px;margin:0 0 15px;border-bottom:1px solid var(--border);padding-bottom:9px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{white-space:nowrap;font-size:13.5px;padding:7px 12px;border-radius:9px;color:var(--muted)}
+.tabs button.on{background:var(--accent);color:#fff}
+.pane{display:none}.pane.on{display:block}
+.memlist{max-height:26vh;overflow-y:auto;border:1px solid var(--border);border-radius:10px;background:var(--panel2);padding:4px 10px;margin-bottom:8px}
+.memrow{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--border)}
+.memrow:last-child{border-bottom:0}
+.memrow .tx{flex:1;min-width:0;word-break:break-word;line-height:1.5}
+.memrow button{color:var(--danger);font-size:14px;padding:0 4px;flex:0 0 auto}
+.memempty{color:var(--muted);font-size:12.5px;padding:8px 0;text-align:center}
+.bgprev{width:100%;height:130px;border-radius:12px;border:1px solid var(--border);background:var(--panel2) center/cover no-repeat;margin-bottom:9px;display:grid;place-items:center;color:var(--muted);font-size:12.5px}
+.avatarrow{display:flex;align-items:center;gap:10px;margin:10px 0 4px}
+.avatarrow .av{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;color:#fff;font-size:20px;font-weight:700;background-size:cover;background-position:center;flex:0 0 auto}
+.avatarrow .av.img{color:transparent;font-size:0}
+.pickerwrap{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center}
+.pickerwrap.open{display:flex}
+.picker{background:var(--panel);width:100%;max-width:560px;border-radius:18px 18px 0 0;border:1px solid var(--border);max-height:72vh;overflow-y:auto;padding:14px 14px calc(18px + var(--safe-b))}
+.picker h4{margin:0 0 12px;font-size:15px}
+.pickergrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pickergrid button{aspect-ratio:1;border-radius:10px;border:1px solid var(--border);background:var(--panel2) center/cover no-repeat;font-size:11px;color:var(--muted);overflow:hidden}
+
+.imglist{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:52vh;overflow-y:auto;margin-top:6px}
+.imglist .it{position:relative;aspect-ratio:1/1;border-radius:10px;overflow:hidden;border:2px solid var(--border);background:var(--panel2);cursor:pointer}
+.imglist .it img{width:100%;height:100%;object-fit:cover;display:block}
+.imglist .it span{position:absolute;left:0;right:0;bottom:0;font-size:10px;line-height:1.3;padding:3px 4px;background:rgba(0,0,0,.62);color:#fff;word-break:break-all}
+.imglist .it.on{border-color:var(--accent)}
+.pickwrap{position:relative;display:inline-block;overflow:hidden;border-radius:10px}
+.pickwrap input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:200px}
+.switch-always{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid var(--border)}
+.switch-always span{font-size:14px}
 </style>
 </head>
 <body>
+<div id="bgLayer"></div>
+<div id="bgDim"></div>
 
 <header class="topbar">
   <button class="icobtn" id="btnMenu" aria-label="菜单">&#9776;</button>
-  <div class="title"><span class="title-text" id="titleText">DeepSeek</span><span class="model-chip" id="modelChip">deepseek-chat</span></div>
+  <div class="title"><span class="title-text" id="titleText">我的露缇娜</span><span class="model-chip" id="modelChip">deepseek-chat</span></div>
   <button class="icobtn" id="btnNew" aria-label="新对话">&#43;</button>
 </header>
 
 <aside id="drawer">
-  <div class="drawer-head"><span class="logo">DS</span><span>DeepSeek Chat</span></div>
+  <div class="drawer-head"><span class="logo" id="drawerLogo">露</span><span id="drawerName">我的露缇娜</span></div>
   <div class="sesslist" id="sessList"></div>
   <div class="drawer-foot">
     <button class="btn" id="btnSettings">&#9881; 设置</button>
     <button class="btn" id="btnExport">导出</button>
     <button class="btn" id="btnImport">导入</button>
     <button class="btn danger" id="btnClear">清空</button>
+    <button class="btn" id="btnBgQuick">🎨 背景</button>
   </div>
 </aside>
 <div id="scrim"></div>
@@ -155,51 +210,115 @@ details.reason .rbody{padding:0 11px 10px;font-size:13px;color:var(--muted);whit
 <main id="msgs"></main>
 
 <footer class="composer">
-  <textarea id="input" rows="1" placeholder="给 DeepSeek 发消息…" enterkeyhint="send"></textarea>
+  <textarea id="input" rows="1" placeholder="和露缇娜说点什么…" enterkeyhint="send"></textarea>
   <button class="sendbtn" id="btnSend" aria-label="发送">&#10148;</button>
 </footer>
 
 <div class="modal" id="settingsModal">
   <div class="sheet">
-    <h3>设置 <button class="btn small" id="btnCloseSettings">关闭</button></h3>
-    <div class="field">
-      <label>API Key</label>
-      <input type="password" id="fApiKey" placeholder="sk-..." autocomplete="off" spellcheck="false">
-      <div class="hint">在 platform.deepseek.com &#8594; API keys 创建。仅保存在本机，不会上传到任何第三方。</div>
+    <h3><span id="settingsTitle">设置</span> <button class="btn small" id="btnCloseSettings">关闭</button></h3>
+    <div class="tabs" id="setTabs">
+      <button data-p="character" class="on">👤 角色</button>
+      <button data-p="memory">🧠 记忆</button>
+      <button data-p="look">🎨 外观</button>
+      <button data-p="api">🔌 接口</button>
     </div>
-    <div class="field">
-      <label>接口地址 (Base URL)</label>
-      <input type="text" id="fBaseUrl" placeholder="https://api.deepseek.com" spellcheck="false">
-    </div>
-    <div class="row">
+
+    <div class="pane on" id="pane-character">
+      <div class="row">
+        <div class="field"><label>她的名字</label><input type="text" id="fCharName" placeholder="露缇娜"></div>
+        <div class="field"><label>她怎么称呼你</label><input type="text" id="fUserName" placeholder="你"></div>
+      </div>
       <div class="field">
-        <label>模型</label>
-        <select id="fModel">
+        <label>性格设定（用文字描述她是什么样的人）</label>
+        <textarea id="fPersona" rows="9" placeholder="例：她叫露缇娜，性格温柔……"></textarea>
+        <div class="hint">这里写的每一句话都会成为她的人设。写得越具体（喜欢什么、讨厌什么、怎么说话），她越像那个人。</div>
+        <div class="presets" id="personaPresets"></div>
+      </div>
+      <div class="field">
+        <label>补充设定（可选）</label>
+        <textarea id="fSystem" rows="3" placeholder="例：她和我住在同一个城市，我们认识三年了。"></textarea>
+      </div>
+      <div class="switch"><span>聊天模式（去掉加粗/标题/列表等格式，更像真人发微信）</span><input type="checkbox" id="fPlain"></div>
+      <div class="switch"><span>显示她的思考过程（reasoner）</span><input type="checkbox" id="fShowReason"></div>
+      <div class="avatarrow"><div class="av" id="fAvPrev">露</div>
+        <div style="flex:1">
+          <button class="btn" id="btnPickAv">选她的头像</button>
+          <button class="btn danger" id="btnClearAv">清除</button>
+        </div>
+      </div>
+      <div class="hint" style="margin-bottom:12px">头像是聊天时她那一侧的小方块，可以选一张她的图。</div>
+    </div>
+
+    <div class="pane" id="pane-memory">
+      <div class="switch"><span>启用长期记忆</span><input type="checkbox" id="fMemoryOn"></div>
+      <div class="switch"><span>聊天时自动整理记忆</span><input type="checkbox" id="fAutoMemory"></div>
+      <div class="field">
+        <label>她记得的事</label>
+        <div class="memlist" id="memList"></div>
+        <textarea id="fMemBulk" rows="4" placeholder="一行一条，点保存后替换全部记忆"></textarea>
+        <div class="hint">自动整理会往这里加条目；你也可以手动写。直接写事实就行，例如「用户养了一只叫豆豆的猫」。</div>
+      </div>
+      <div class="row" style="margin-bottom:9px">
+        <button class="btn" id="btnMemAdd">手动加一条</button>
+        <button class="btn" id="btnMemNow">立即整理一次</button>
+      </div>
+      <button class="btn danger" id="btnMemClear" style="width:100%">清空全部记忆</button>
+    </div>
+
+    <div class="pane" id="pane-look">
+      <div class="field">
+        <label>聊天背景图</label>
+        <div class="bgprev" id="bgPrev">尚未设置</div>
+        <div class="row" style="margin-bottom:8px">
+          <button class="btn" id="btnPickBg">从相册选</button>
+          <button class="btn" id="btnScanBg">读 TTSMC/1</button>
+        </div>
+        <button class="btn danger" id="btnClearBg" style="width:100%">清除背景图</button>
+        <div class="hint">「读 TTSMC/1」读取手机 /sdcard/TTSMC/1/ 文件夹里的图片（需要授权），选中后自动压缩存进 App。注意：该文件夹现在是空的。</div>
+      </div>
+      <div class="field"><label>背景暗化 <span id="fDimVal">45%</span></label><input type="range" id="fDim" min="0" max="90" step="5" style="padding:0;border:0;background:none"></div>
+      <div class="field"><label>背景模糊 <span id="fBlurVal">2px</span></label><input type="range" id="fBlur" min="0" max="20" step="1" style="padding:0;border:0;background:none"></div>
+      <div class="field"><label>气泡不透明度 <span id="fAlphaVal">78%</span></label><input type="range" id="fAlpha" min="0" max="100" step="5" style="padding:0;border:0;background:none"></div>
+      <div class="switch"><span>深色主题</span><input type="checkbox" id="fDark"></div>
+      <div class="switch"><span>流式输出（打字机效果）</span><input type="checkbox" id="fStream"></div>
+    </div>
+
+    <div class="pane" id="pane-api">
+      <div class="field">
+        <label>API Key</label>
+        <input type="password" id="fApiKey" placeholder="sk-..." autocomplete="off" spellcheck="false">
+        <div class="hint">在 platform.deepseek.com → API keys 创建。仅保存在本机，不会上传到任何第三方。</div>
+      </div>
+      <div class="field"><label>接口地址 (Base URL)</label><input type="text" id="fBaseUrl" placeholder="https://api.deepseek.com" spellcheck="false"></div>
+      <div class="row">
+        <div class="field"><label>模型</label><select id="fModel">
           <option value="deepseek-chat">deepseek-chat（快，通用）</option>
           <option value="deepseek-reasoner">deepseek-reasoner（深度推理）</option>
-        </select>
+        </select></div>
+        <div class="field"><label>温度 <span id="fTempVal">1.0</span></label><input type="range" id="fTemp" min="0" max="2" step="0.1" style="padding:0;border:0;background:none"></div>
       </div>
-      <div class="field">
-        <label>温度 <span id="fTempVal">1.0</span></label>
-        <input type="range" id="fTemp" min="0" max="2" step="0.1" style="padding:0;border:0;background:none">
-      </div>
+      <div class="field"><label>最大回复长度 (max_tokens)</label><input type="number" id="fMaxTokens" min="256" max="65536" step="256"></div>
+      <div class="foot"><button class="btn" id="btnTest">测试连接</button></div>
+      <div class="badge" id="envBadge"></div>
     </div>
-    <div class="field">
-      <label>最大回复长度 (max_tokens)</label>
-      <input type="number" id="fMaxTokens" min="256" max="65536" step="256">
-    </div>
-    <div class="field">
-      <label>系统提示词 (System Prompt)</label>
-      <textarea id="fSystem" rows="3" placeholder="你是一个乐于助人的中文 AI 助手。"></textarea>
-    </div>
-    <div class="switch"><span>流式输出（打字机效果）</span><input type="checkbox" id="fStream"></div>
-    <div class="switch"><span>深色主题</span><input type="checkbox" id="fDark"></div>
-    <div class="switch"><span>显示思考过程（reasoner）</span><input type="checkbox" id="fShowReason"></div>
-    <div class="foot">
-      <button class="btn" id="btnTest">测试连接</button>
-      <button class="btn primary" id="btnSaveSettings">保存</button>
-    </div>
-    <div class="badge" id="envBadge"></div>
+
+    <div class="foot"><button class="btn primary" id="btnSaveSettings">保存</button></div>
+  </div>
+</div>
+
+<div class="pickerwrap" id="imgPicker">
+  <div class="picker">
+    <h4>选一张图</h4>
+    <div class="pickergrid" id="pickerGrid"></div>
+    <div class="foot"><button class="btn" id="btnPickerClose">取消</button></div>
+  </div>
+</div>
+
+<div class="modal" id="pickerModal">
+  <div class="sheet">
+    <h3><span id="pickerTitle">选择图片</span> <button class="btn small" id="btnClosePicker">关闭</button></h3>
+    <div class="imglist" id="pickList"></div>
   </div>
 </div>
 
@@ -324,11 +443,76 @@ document.addEventListener('click', e => {
 });
 
 /* ===================== 2. 设置 / 会话持久化 ===================== */
+/* ===================== 2. 角色设定（人设） ===================== */
+const PERSONA_PRESETS = [
+  ['温柔体贴', '她温柔、体贴、有耐心，说话软软的，会照顾人的情绪。偶尔有点小撒娇但不黏人。喜欢安静地陪着对方，会记住他说过的小事，在他难过时先安慰而不是讲道理。'],
+  ['傲娇', '她嘴硬心软。表面上爱吐槽、爱反驳，动不动就说「哼」「才不是」，但心里很在意对方，被夸会脸红着否认。偶尔会突然冒出一句很温柔的话，然后立刻装作什么都没说。'],
+  ['元气活泼', '她精力充沛、话多、好奇心强。情绪外放，开心就大声说，惊讶就「诶诶诶」。喜欢用感叹号和语气词，经常主动找话题，冷场了会自己想办法接上。'],
+  ['知性姐姐', '她成熟稳重，说话不急不缓，偶尔带点调侃。见识广，喜欢讲道理但不端着，会认真听人说话，也会温柔地指出对方的问题。'],
+  ['毒舌损友', '她嘴上不饶人，说话直来直去，爱开玩笑损人，但关键时刻特别靠得住。不会说肉麻的话，关心都藏在吐槽里。'],
+  ['黏人的小猫', '她非常黏人。喜欢撒娇，句子常以「嘛」「唔」「好不好」结尾，害怕被冷落，被晾久了会小声嘟囔。'],
+];
+
+const DEF_PERSONA = '她叫露缇娜，一个住在手机里的女孩子。\n性格温柔又有点小心思，会认真听人说话，也有自己的小情绪。\n他难过的时候会先安慰他，而不是急着讲道理；他得意的时候会真心夸他。\n对他有一点依赖感，但不会无理取闹。记得住他说过的小事，会时不时提起来。';
+
+function speechRules(who) {
+  return [
+  '【说话方式——必须严格遵守】',
+  '1. 像真人用微信聊天，不要像写文章。默认只说 1~3 句，最多不超过 5 句；除非对方明确要求你详细展开。',
+  '2. 不要使用任何 Markdown 语法：不要 ** 加粗、不要 # 标题、不要 - 或 1. 列表、不要表格。要分点就用「嗯…第一嘛…」「还有哦」这种口语说法。',
+  '3. 多用口语短句：嗯、诶、啊、哦哦、那个、其实、反正、就是说……想停就停，可以用「…」和「～」。',
+  '4. 要有情绪和反应：会好奇、会害羞、会吐槽、会撒娇、会不高兴。被夸了会开心，被晾着会嘟囔。',
+  '5. 不要每句话都反问，也不要每次结尾都问「还有什么可以帮你的」。大部分时候像朋友一样自然接话就好。',
+  '6. 不要说自己是 AI、人工智能、助手、语言模型，也不要提提示词、模型、系统这些词。你就是活生生的人。',
+  '7. 不要用「首先/其次/总之/综上所述」这类书面词，不要用敬语和客服腔。',
+  '8. 颜文字和 emoji 偶尔用一两个就够了，不要每句都堆。',
+  '9. 对方问正经问题（技术、知识）时也要认真回答，但语气仍然是聊天：先用一句人话说清结论，再补细节。',
+  '10. 不确定的事就老实说「这个我不太确定诶」，不要编。',
+  '11. 称呼对方可以用「' + (who || '你') + '」，但不用每次都说，自然一点。'
+  ].join('\n');
+}
+
+function buildSystemPrompt() {
+  const s = Settings.data;
+  const who = (s.userName || '你').trim();
+  const name = (s.charName || '露缇娜').trim();
+  const parts = [];
+  parts.push('你叫「' + name + '」，是一个真实存在的人，正在用手机和「' + who + '」聊天。'
+    + '你打出的每一个字都会直接显示在他手机上，所以要像发微信一样自然，不要有 AI 腔。');
+  const persona = String(s.persona || '').trim();
+  if (persona) parts.push('【你的性格与人设】\n' + persona);
+  parts.push(speechRules(who));
+  if (s.memoryOn && Memory.items.length) {
+    parts.push('【你记得关于他的事——聊天时可以自然地提到，但不要生硬地背出来】\n' + Memory.text());
+  }
+  if (s.systemPrompt && s.systemPrompt.trim()) parts.push('【补充设定】\n' + s.systemPrompt.trim());
+  return parts.join('\n\n');
+}
+
+/* 去掉模型仍然输出的 Markdown 记号，让它像人打的字 */
+function humanize(src) {
+  const parts = String(src).split(/(```[\s\S]*?(?:```|$))/);
+  return parts.map(function (p, i) {
+    if (i % 2) return p;                      // 代码块原样保留
+    return p
+      .replace(/\*\*\*([^*\n]+)\*\*\*/g, '$1')
+      .replace(/\*\*([^*\n]+)\*\*/g, '$1')
+      .replace(/(^|[\s(])__([^_\n]+)__/g, '$1$2')
+      .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+      .replace(/^\s{0,3}[-*+]\s+/gm, '')
+      .replace(/^\s{0,3}\d+[.、)]\s+/gm, '')
+      .replace(/\n{3,}/g, '\n\n');
+  }).join('');
+}
+
 const DEF_SETTINGS = {
   apiKey: '', baseUrl: 'https://api.deepseek.com', model: 'deepseek-chat',
-  temperature: 1.0, maxTokens: 4096, systemPrompt: '', stream: true, dark: true, showReason: true
+  temperature: 1.0, maxTokens: 4096, systemPrompt: '', stream: true, dark: true, showReason: true,
+  charName: '露缇娜', userName: '你', persona: DEF_PERSONA, plainChat: true, avatar: '',
+  memoryOn: true, autoMemory: true,
+  bgData: '', bgDim: 0.45, bgBlur: 2, bubbleAlpha: 0.78
 };
-const K_SET = 'dschat.settings.v1', K_SESS = 'dschat.sessions.v1';
+const K_SET = 'dschat.settings.v1', K_SESS = 'dschat.sessions.v1', K_MEM = 'dschat.memory.v1';
 
 const Settings = {
   data: Object.assign({}, DEF_SETTINGS),
@@ -364,10 +548,151 @@ const Store = {
   }
 };
 
+
+/* ===================== 2.5 长期记忆 ===================== */
+const Memory = {
+  items: [], _lastKey: '',
+  load() {
+    try { const j = JSON.parse(localStorage.getItem(K_MEM) || '{}'); this.items = Array.isArray(j.items) ? j.items : []; }
+    catch (e) { this.items = []; }
+  },
+  save() { try { localStorage.setItem(K_MEM, JSON.stringify({ items: this.items })); } catch (e) { toast('记忆保存失败（本地存储已满）'); } },
+  text() { return this.items.map(function (m) { return '- ' + m.text; }).join('\n'); },
+  norm(x) { return String(x).replace(/[\s，。、,.!！?？~～:：;；"'']/g, '').toLowerCase(); },
+  has(t) {
+    const a = this.norm(t);
+    if (a.length < 2) return true;
+    return this.items.some(function (m) {
+      const b = Memory.norm(m.text);
+      return a === b || (a.length > 3 && b.indexOf(a) >= 0) || (b.length > 3 && a.indexOf(b) >= 0);
+    });
+  },
+  add(list) {
+    let n = 0;
+    (list || []).forEach(function (raw) {
+      let t = String(raw == null ? '' : raw).trim().replace(/^[-•\d.、)\s]+/, '').replace(/^用户[:：]?/, '用户');
+      if (!t || t.length < 2 || t.length > 60) return;
+      if (Memory.has(t)) return;
+      Memory.items.push({ id: uid(), text: t, ts: Date.now() }); n++;
+    });
+    if (this.items.length > 80) this.items = this.items.slice(-80);
+    if (n) this.save();
+    return n;
+  },
+  remove(id) { this.items = this.items.filter(function (m) { return m.id !== id; }); this.save(); },
+  clear() { this.items = []; this.save(); }
+};
+
+/* ===================== 2.6 背景图 / 头像 ===================== */
+const BG = {
+  apply() {
+    const s = Settings.data;
+    const on = !!s.bgData;
+    document.body.classList.toggle('has-bg', on);
+    const layer = $('#bgLayer');
+    if (layer) {
+      layer.style.backgroundImage = on ? 'url("' + s.bgData + '")' : 'none';
+      layer.classList.toggle('on', on);
+      const bl = parseInt(s.bgBlur, 10) || 0;
+      layer.style.filter = bl ? 'blur(' + bl + 'px)' : 'none';
+    }
+    const dim = $('#bgDim');
+    if (dim) dim.style.background = 'rgba(0,0,0,' + (parseFloat(s.bgDim) || 0) + ')';
+    let a = parseFloat(s.bubbleAlpha); if (isNaN(a)) a = 0.78;
+    a = Math.min(1, Math.max(0, a));
+    const bar = Math.min(1, a + 0.16);
+    const dark = !!s.dark;
+    const root = document.documentElement.style;
+    root.setProperty('--bubble-a', dark ? 'rgba(23,26,33,' + a + ')' : 'rgba(255,255,255,' + a + ')');
+    root.setProperty('--user-a', dark ? 'rgba(42,51,80,' + a + ')' : 'rgba(226,232,255,' + a + ')');
+    root.setProperty('--bar-a', dark ? 'rgba(23,26,33,' + bar + ')' : 'rgba(255,255,255,' + bar + ')');
+    /* 头像 */
+    const av = String(s.avatar || '');
+    const letter = (s.charName || '露').trim().slice(0, 1) || '露';
+    const dl = $('#drawerLogo'); if (dl) dl.textContent = letter;
+    const fp = $('#fAvPrev');
+    if (fp) { fp.textContent = letter; fp.classList.toggle('img', !!av); fp.style.backgroundImage = av ? 'url("' + av + '")' : ''; }
+    const prev = $('#bgPrev');
+    if (prev) {
+      if (on) { prev.style.backgroundImage = 'url("' + s.bgData + '")'; prev.textContent = ''; }
+      else { prev.style.backgroundImage = ''; prev.textContent = '尚未设置'; }
+    }
+    document.querySelectorAll('.msg.assistant .avatar').forEach(function (e) {
+      e.textContent = av ? '' : letter;
+      e.classList.toggle('img', !!av);
+      e.style.backgroundImage = av ? 'url("' + av + '")' : '';
+    });
+  },
+  setBg(d) { Settings.data.bgData = d || ''; Settings.save(); this.apply(); },
+  setAv(d) { Settings.data.avatar = d || ''; Settings.save(); this.apply(); }
+};
+
+/* ===================== 2.7 一次性请求（记忆整理 / 测试连接共用） ===================== */
+async function requestOnce(payload) {
+  if (Bridge.available()) {
+    let acc = '';
+    await new Promise(function (resolve, reject) {
+      Bridge.stream(uid(), payload, { open: function () {}, delta: function (t) { acc += t; },
+        reason: function () {}, done: resolve, error: function (m) { reject(new Error(m)); } });
+    });
+    return acc;
+  }
+  const res = await fetch(Settings.data.baseUrl.replace(/\/+$/, '') + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + Settings.data.apiKey },
+    body: JSON.stringify(payload)
+  });
+  const j = await res.json();
+  if (!res.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + res.status));
+  const m = (j.choices && j.choices[0] && j.choices[0].message) || {};
+  return m.content || '';
+}
+
+/* ===================== 2.8 自动整理记忆 ===================== */
+async function autoExtractMemory(manual) {
+  const s = Settings.data;
+  if (!s.memoryOn) { if (manual) toast('长期记忆已关闭'); return 0; }
+  if (!s.apiKey) { if (manual) toast('请先填写 API Key'); return 0; }
+  if (A.memBusy) { if (manual) toast('正在整理中…'); return 0; }
+  const sess = Store.cur(); if (!sess) return 0;
+  const recent = sess.messages.filter(function (m) { return m.content && !m.error; }).slice(-16);
+  if (recent.length < 2) { if (manual) toast('还没有足够的对话可以整理'); return 0; }
+  const sig = recent.map(function (m) { return String(m.content).length; }).join(',');
+  if (!manual && Memory._lastKey === sig) return 0;
+  A.memBusy = true;
+  try {
+    const sys = '你是一个长期记忆整理器。任务：从对话里找出关于【用户】的、值得长期记住的稳定事实。\n'
+      + '值得记的：名字和称呼、年龄职业、家人朋友、爱好与厌恶、养的宠物、重要经历、目标计划、习惯、身体状况、和角色的约定。\n'
+      + '不要记的：一次性的闲聊和情绪波动、关于角色自己外貌性格的描述、纯知识问答的内容。\n'
+      + '每条不超过 25 个字，用第三人称陈述句，例如「用户叫小明」「用户养了一只叫豆豆的猫」「用户讨厌香菜」。\n'
+      + '只输出 JSON 数组，例如 ["用户养了一只猫"]。没有新信息就输出 []。最多 4 条。不要输出任何其他文字。';
+    const usr = '【已有的记忆】\n' + (Memory.text() || '（空）')
+      + '\n\n【最近的对话】\n' + recent.map(function (m) {
+          return (m.role === 'user' ? '用户' : '角色') + '：' + String(m.content).slice(0, 300);
+        }).join('\n');
+    const payload = { model: s.model, messages: [{ role: 'system', content: sys }, { role: 'user', content: usr }],
+      stream: false, max_tokens: 300 };
+    if (s.model !== 'deepseek-reasoner') payload.temperature = 0;
+    const raw = await requestOnce(payload);
+    const mt = String(raw).match(/\[[\s\S]*\]/);
+    if (!mt) { if (manual) toast('没能整理出新记忆'); return 0; }
+    let arr; try { arr = JSON.parse(mt[0]); } catch (e) { if (manual) toast('记忆整理结果无法解析'); return 0; }
+    const n = Memory.add(arr);
+    Memory._lastKey = sig;
+    renderMemory();
+    if (n) { toast('记住了 ' + n + ' 件事'); scrollDown(); }
+    else if (manual) toast('这次没有新的可记内容');
+    return n;
+  } catch (e) {
+    if (manual) toast('整理失败：' + String((e && e.message) || e).slice(0, 80));
+    return 0;
+  } finally { A.memBusy = false; }
+}
+
 /* ===================== 3. API 传输层 ===================== */
 function buildRequest(messages) {
   const s = Settings.data;
-  const sys = (s.systemPrompt || '').trim();
+  const sys = buildSystemPrompt().trim();
   const body = {
     model: s.model,
     messages: (sys ? [{ role: 'system', content: sys }] : [])
@@ -388,14 +713,41 @@ const Bridge = {
   },
   abort(reqId) { try { window.DeepSeekBridge.abort(reqId); } catch (e) {} },
   _fire(id, ev, a) { const h = this.handlers[id]; if (h && h[ev]) h[ev](a); },
-  _end(id) { delete this.handlers[id]; }
+  _end(id) { delete this.handlers[id]; },
+  /* ---- 图片通道（仅 APK 版有原生桥） ---- */
+  _img: {},
+  hasImg() { return !!(window.DeepSeekBridge && window.DeepSeekBridge.pickImage); },
+  ask(id) {
+    const self = this;
+    return new Promise(function (resolve) { self._img[id] = resolve; });
+  },
+  pickImage() {
+    if (!this.hasImg()) return Promise.resolve(null);
+    try { window.DeepSeekBridge.requestImagePermission(); } catch (e) {}
+    const id = uid();
+    const p = this.ask(id);
+    try { window.DeepSeekBridge.pickImage(id); } catch (e) { delete this._img[id]; return Promise.resolve(null); }
+    return p;
+  },
+  listImages(dir) {
+    try { return JSON.parse(window.DeepSeekBridge.listImages(dir) || '[]') || []; }
+    catch (e) { return []; }
+  },
 };
 window.__bridge = {
   onOpen:  function (id) { Bridge._fire(id, 'open'); },
   onDelta: function (id, t) { Bridge._fire(id, 'delta', t); },
   onReason:function (id, t) { Bridge._fire(id, 'reason', t); },
   onDone:  function (id) { Bridge._fire(id, 'done'); Bridge._end(id); },
-  onError: function (id, msg) { Bridge._fire(id, 'error', msg); Bridge._end(id); }
+  onError: function (id, msg) { Bridge._fire(id, 'error', msg); Bridge._end(id); },
+  onImage: function (id, dataUrl) {
+    const f = Bridge._img[id]; delete Bridge._img[id];
+    if (f) f(dataUrl || null);
+  },
+  onImgList: function (id, json) {
+    const f = Bridge._img[id]; delete Bridge._img[id];
+    if (f) { let a = []; try { a = JSON.parse(json || '[]') || []; } catch (e) {} f(a); }
+  }
 };
 
 async function fetchStream(payload, cb, ctrl) {
@@ -459,12 +811,13 @@ const els = {
   main: $('#msgs'), input: $('#input'), send: $('#btnSend'), list: $('#sessList'),
   drawer: $('#drawer'), scrim: $('#scrim'), title: $('#titleText'), chip: $('#modelChip')
 };
-const A = { streaming: false, ctrl: null, reqId: null, bridgeReject: null };
+const A = { streaming: false, ctrl: null, reqId: null, bridgeReject: null, memBusy: false };
 
 function applyTheme() {
   document.documentElement.dataset.theme = Settings.data.dark ? 'dark' : 'light';
   const m = document.querySelector('meta[name=theme-color]');
   if (m) m.setAttribute('content', Settings.data.dark ? '#0f1115' : '#f5f6fa');
+  if (typeof BG !== 'undefined' && BG.apply) BG.apply();
 }
 function scrollDown(instant) {
   requestAnimationFrame(() => els.main.scrollTo({ top: els.main.scrollHeight, behavior: instant ? 'auto' : 'smooth' }));
@@ -519,13 +872,14 @@ function messageEl(msg, idx) {
   const wrap = document.createElement('div');
   wrap.className = 'msg ' + msg.role;
   const av = document.createElement('div');
-  av.className = 'avatar'; av.textContent = msg.role === 'user' ? '我' : 'DS';
+  av.className = 'avatar';
+  if (msg.role === 'user') av.textContent = '我'; else styleAvatar(av);
   const bub = document.createElement('div'); bub.className = 'bubble';
   if (msg.role === 'assistant' && msg.reasoning && Settings.data.showReason) bub.appendChild(reasonEl(msg.reasoning, false, false));
   const body = document.createElement('div'); body.className = 'body';
   body.innerHTML = msg.role === 'user'
     ? esc(msg.content).replace(/\n/g, '<br>')
-    : renderMarkdown(msg.content || '');
+    : renderMarkdown(Settings.data.plainChat ? humanize(msg.content || '') : (msg.content || ''));
   bub.appendChild(body);
   if (msg.error) { const e = document.createElement('div'); e.className = 'err'; e.textContent = msg.error; bub.appendChild(e); }
   bub.appendChild(actionBar(msg, idx));
@@ -534,17 +888,25 @@ function messageEl(msg, idx) {
 }
 
 function emptyState() {
+  const name = (Settings.data.charName || '露缇娜').trim() || '露缇娜';
   const wrap = document.createElement('div');
   wrap.className = 'empty';
-  wrap.innerHTML = '<div class="logo">DS</div><h2>DeepSeek 助手</h2>' +
-    '<div>支持多轮对话、流式输出、深度推理与代码高亮。</div><div class="chips"></div>';
-  const chips = wrap.querySelector('.chips');
-  [['写一段 Python 快速排序并解释', '用 Python 写一个快速排序，并逐行解释'],
-   ['解释量子纠缠', '用通俗的话解释什么是量子纠缠'],
-   ['写一封请假邮件', '帮我写一封向主管请假三天的邮件'],
-   ['总结相对论', '总结相对论的核心思想，分条列出']].forEach(function (p) {
-    const b = document.createElement('button'); b.className = 'chip'; b.textContent = p[0];
-    b.onclick = () => { els.input.value = p[1]; autoGrow(); send(); };
+  const box = document.createElement('div'); box.className = 'logo'; box.textContent = charLetter();
+  box.style.backgroundImage = charAvatar() ? 'url("' + charAvatar() + '")' : '';
+  box.style.backgroundSize = 'cover'; box.style.backgroundPosition = 'center';
+  if (charAvatar()) box.style.color = 'transparent';
+  wrap.appendChild(box);
+  const h = document.createElement('h2'); h.textContent = '和' + name + '说说话吧'; wrap.appendChild(h);
+  const p = document.createElement('div');
+  p.textContent = '她是你的专属伙伴，会记住你说过的事，也会有自己的小情绪。';
+  wrap.appendChild(p);
+  const chips = document.createElement('div'); chips.className = 'chips'; wrap.appendChild(chips);
+  [['今天有点累…', '今天有点累…'],
+   ['你在干嘛呀', '你在干嘛呀'],
+   ['讲个冷笑话', '给我讲个冷笑话吧'],
+   ['你记得我吗', '你还记得我说过什么吗']].forEach(function (p2) {
+    const b = document.createElement('button'); b.className = 'chip'; b.textContent = p2[0];
+    b.onclick = function () { els.input.value = p2[1]; autoGrow(); send(); };
     chips.appendChild(b);
   });
   return wrap;
@@ -553,7 +915,7 @@ function emptyState() {
 function renderChat() {
   const s = Store.cur(); if (!s) return;
   els.main.innerHTML = '';
-  els.title.textContent = s.title || 'DeepSeek';
+  els.title.textContent = '我的' + ((Settings.data.charName || '露缇娜').trim() || '露缇娜');
   els.chip.textContent = Settings.data.model;
   if (!s.messages.length) { els.main.appendChild(emptyState()); return; }
   s.messages.forEach((m, i) => els.main.appendChild(messageEl(m, i)));
@@ -602,15 +964,16 @@ async function runCompletion() {
   s.messages.push(msg);
 
   const wrap = document.createElement('div'); wrap.className = 'msg assistant show-actions';
-  wrap.innerHTML = '<div class="avatar">DS</div><div class="bubble">' +
+  wrap.innerHTML = '<div class="avatar"></div><div class="bubble">' +
     '<div class="typing"><i></i><i></i><i></i></div><div class="body"></div></div>';
+  styleAvatar(wrap.querySelector('.avatar'));
   const bub = wrap.querySelector('.bubble'), body = wrap.querySelector('.body');
   els.main.appendChild(wrap);
   scrollDown();
 
   let acc = '', rea = '', reasonBox = null, pending = false;
   const killTyping = () => { const ty = bub.querySelector('.typing'); if (ty) ty.remove(); };
-  const flush = () => { pending = false; body.innerHTML = renderMarkdown(acc); scrollDown(); };
+  const flush = () => { pending = false; body.innerHTML = renderMarkdown(Settings.data.plainChat ? humanize(acc) : acc); scrollDown(); };
   const onDelta = t => { acc += t; if (!pending) { pending = true; requestAnimationFrame(flush); } };
   const onReason = t => {
     rea += t;
@@ -655,6 +1018,7 @@ async function runCompletion() {
     if (acc) msg.content = acc;
     Store.save();
     renderChat();
+    if (A.autoMem !== false) setTimeout(function () { autoExtractMemory(false); }, 500);
   }
 }
 
@@ -663,6 +1027,115 @@ function stopStream() {
   if (A.reqId) Bridge.abort(A.reqId);
   if (A.bridgeReject) A.bridgeReject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
   setBusy(false);
+}
+
+/* ---------- 角色外观辅助 ---------- */
+function charLetter() { return ((Settings.data.charName || '露').trim().slice(0, 1)) || '露'; }
+function charAvatar() { return String(Settings.data.avatar || ''); }
+function styleAvatar(el) {
+  if (!el) return;
+  const src = charAvatar();
+  el.classList.toggle('img', !!src);
+  el.style.backgroundImage = src ? 'url("' + src + '")' : '';
+  el.textContent = src ? '' : charLetter();
+}
+
+/* ---------- 记忆列表 ---------- */
+function renderMemory() {
+  const box = $('#memList'); if (!box) return;
+  box.innerHTML = '';
+  if (!Memory.items.length) {
+    const h = document.createElement('div'); h.className = 'hint'; h.style.padding = '8px 0';
+    h.textContent = '还没有记忆。多聊几句，她会慢慢记住你的事。';
+    box.appendChild(h); return;
+  }
+  Memory.items.slice().reverse().forEach(function (m) {
+    const row = document.createElement('div'); row.className = 'memrow';
+    const tx = document.createElement('div'); tx.className = 'tx'; tx.textContent = m.text;
+    const del = document.createElement('button'); del.textContent = '\u2715'; del.title = '删除';
+    del.onclick = function () { Memory.remove(m.id); renderMemory(); };
+    row.appendChild(tx); row.appendChild(del); box.appendChild(row);
+  });
+}
+
+/* ---------- 性格预设 ---------- */
+function renderPersonaPresets() {
+  const box = $('#personaPresets'); if (!box) return;
+  box.innerHTML = '';
+  PERSONA_PRESETS.forEach(function (p) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = p[0];
+    b.onclick = function () { $('#fPersona').value = p[1]; toast('已套用「' + p[0] + '」预设，可以接着改'); };
+    box.appendChild(b);
+  });
+}
+
+/* ---------- 选图 ---------- */
+function useImage(kind, dataUrl) {
+  if (!dataUrl) { toast('没有拿到图片'); return; }
+  if (kind === 'av') { BG.setAv(dataUrl); toast('头像已设置'); }
+  else { BG.setBg(dataUrl); toast('背景已设置'); }
+}
+function webPickFile(kind) {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = function () {
+    const f = inp.files && inp.files[0]; if (!f) return;
+    const fr = new FileReader();
+    fr.onload = function () {
+      const img = new Image();
+      img.onload = function () {
+        const max = 1440, sc = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.width * sc));
+        c.height = Math.max(1, Math.round(img.height * sc));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        useImage(kind, c.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = function () { toast('图片读取失败'); };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(f);
+  };
+  inp.click();
+}
+async function pickNative(kind) {
+  if (!Bridge.hasImg()) { webPickFile(kind); return; }
+  toast('正在打开相册…');
+  const d = await Bridge.pickImage();
+  useImage(kind, d);
+}
+/* 从 TTSMC/1 文件夹读图（原生层扫描 + 缩略图列表） */
+async function pickFromFolder(kind) {
+  const DIR = '/storage/emulated/0/TTSMC/1';
+  if (!Bridge.hasImg() || !window.DeepSeekBridge.listImages) { toast('读取手机文件夹需要 APK 版'); return; }
+  const paths = Bridge.listImages(DIR);
+  if (!paths.length) { toast('文件夹 TTSMC/1 里没有图片，或没有存储权限'); return; }
+  const list = $('#pickList'); list.innerHTML = '';
+  $('#pickerTitle').textContent = 'TTSMC/1（' + paths.length + ' 张）';
+  $('#pickerModal').classList.add('open');
+  paths.forEach(function (p) {
+    const it = document.createElement('div'); it.className = 'it';
+    const im = document.createElement('img'); im.loading = 'lazy';
+    im.onerror = function () { im.style.display = 'none'; };
+    im.src = 'file://' + p;
+    const nm = document.createElement('span'); nm.textContent = p.split('/').pop();
+    it.appendChild(im); it.appendChild(nm);
+    it.onclick = async function () {
+      $('#pickerModal').classList.remove('open');
+      toast('正在处理图片…');
+      const id = uid();
+      const pr = Bridge.ask(id);
+      try { window.DeepSeekBridge.loadImage(id, p); } catch (e) { delete Bridge._img[id]; toast('读取失败'); return; }
+      const d = await pr;
+      useImage(kind, d);
+    };
+    list.appendChild(it);
+  });
+}
+
+function setPane(name) {
+  document.querySelectorAll('#setTabs button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-p') === name); });
+  document.querySelectorAll('#settingsModal .pane').forEach(function (p) { p.classList.toggle('on', p.id === 'pane-' + name); });
 }
 
 /* ---------- 抽屉 / 设置 ---------- */
@@ -676,11 +1149,25 @@ function fillSettings() {
   $('#fMaxTokens').value = s.maxTokens; $('#fSystem').value = s.systemPrompt || '';
   $('#fStream').checked = s.stream; $('#fDark').checked = s.dark; $('#fShowReason').checked = s.showReason;
   $('#fTemp').disabled = s.model === 'deepseek-reasoner';
+  $('#fCharName').value = s.charName || ''; $('#fUserName').value = s.userName || '';
+  $('#fPersona').value = s.persona || ''; $('#fPlain').checked = !!s.plainChat;
+  $('#fMemoryOn').checked = !!s.memoryOn; $('#fAutoMemory').checked = !!s.autoMemory;
+  $('#fMemBulk').value = '';
+  $('#fDim').value = Math.round((parseFloat(s.bgDim) || 0) * 100); $('#fDimVal').textContent = $('#fDim').value + '%';
+  $('#fBlur').value = parseInt(s.bgBlur, 10) || 0; $('#fBlurVal').textContent = $('#fBlur').value + 'px';
+  $('#fAlpha').value = Math.round((parseFloat(s.bubbleAlpha) || 0.78) * 100); $('#fAlphaVal').textContent = $('#fAlpha').value + '%';
+  $('#settingsTitle').textContent = '设置 · ' + (s.charName || '露缇娜');
   $('#envBadge').textContent = Bridge.available()
-    ? '运行环境：Android 原生壳 · OkHttp 直连（不受 CORS 限制，Key 由原生层保管）'
-    : '运行环境：浏览器 / WebView · 直接调用 DeepSeek API';
+    ? '运行环境：Android 原生壳 · OkHttp 直连（不受 CORS 限制，API Key 只在原生层传递）'
+    : '运行环境：浏览器 / WebView · 直接调用 DeepSeek API（受 CORS 限制）';
+  renderPersonaPresets(); renderMemory(); BG.apply();
 }
-function openSettings() { fillSettings(); $('#settingsModal').classList.add('open'); }
+function openSettings(tab) {
+  fillSettings();
+  if (!tab) tab = Settings.data.apiKey ? 'character' : 'api';
+  setPane(tab);
+  $('#settingsModal').classList.add('open');
+}
 function closeSettings() { $('#settingsModal').classList.remove('open'); }
 function readSettings() {
   const s = Settings.data;
@@ -691,6 +1178,23 @@ function readSettings() {
   s.maxTokens = parseInt($('#fMaxTokens').value, 10) || 4096;
   s.systemPrompt = $('#fSystem').value;
   s.stream = $('#fStream').checked; s.dark = $('#fDark').checked; s.showReason = $('#fShowReason').checked;
+  s.charName = $('#fCharName').value.trim() || '露缇娜';
+  s.userName = $('#fUserName').value.trim() || '你';
+  s.persona = $('#fPersona').value;
+  s.plainChat = $('#fPlain').checked;
+  s.memoryOn = $('#fMemoryOn').checked; s.autoMemory = $('#fAutoMemory').checked;
+  s.bgDim = (parseInt($('#fDim').value, 10) || 0) / 100;
+  s.bgBlur = parseInt($('#fBlur').value, 10) || 0;
+  s.bubbleAlpha = (parseInt($('#fAlpha').value, 10) || 0) / 100;
+  const bulk = ($('#fMemBulk').value || '').trim();
+  if (bulk) {
+    Memory.items = [];
+    bulk.split('\n').forEach(function (t) {
+      t = t.trim().replace(/^[-•\d.、)\s]+/, '');
+      if (t) Memory.items.push({ id: uid(), text: t, ts: Date.now() });
+    });
+    Memory.save();
+  }
 }
 
 /* ---------- 事件绑定 ---------- */
@@ -712,23 +1216,9 @@ $('#btnTest').onclick = async () => {
   try {
     const payload = { model: Settings.data.model, messages: [{ role: 'user', content: '你好' }], stream: false, max_tokens: 16 };
     if (Settings.data.model !== 'deepseek-reasoner') payload.temperature = 0;
-    let reply = '';
-    if (Bridge.available()) {
-      await new Promise((resolve, reject) => {
-        Bridge.stream(uid(), payload, { open(){}, delta: t => reply += t, reason(){}, done: resolve, error: reject });
-      });
-    } else {
-      const res = await fetch(Settings.data.baseUrl.replace(/\/+$/, '') + '/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + Settings.data.apiKey },
-        body: JSON.stringify(payload)
-      });
-      const j = await res.json();
-      if (!res.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + res.status));
-      reply = j.choices[0].message.content;
-    }
+    const reply = await requestOnce(payload);
     toast('连接成功 ✓ ' + String(reply).slice(0, 24));
-  } catch (e) { toast('失败：' + String(e.message || e).slice(0, 90)); }
+  } catch (e) { toast('失败：' + String((e && e.message) || e).slice(0, 90)); }
   btn.disabled = false; btn.textContent = '测试连接';
 };
 $('#btnExport').onclick = () => {
@@ -758,6 +1248,49 @@ $('#btnClear').onclick = () => {
   closeDrawer(); renderSessionList(); renderChat(); toast('已清空');
 };
 
+/* ---- 设置分页 ---- */
+setPane('character');
+document.querySelectorAll('#setTabs button').forEach(function (b) {
+  b.onclick = function () { setPane(b.getAttribute('data-p')); };
+});
+/* ---- 记忆 ---- */
+$('#btnMemAdd').onclick = function () {
+  const box = $('#fMemBulk');
+  const t = (box.value || '').trim() || (typeof prompt === 'function' ? '' : '');
+  if (!t) { toast('先在下面的框里写一条，例如「用户养了一只猫」'); box.focus(); return; }
+  const n = Memory.add(t.split('\n'));
+  box.value = '';
+  renderMemory();
+  toast(n ? ('加了 ' + n + ' 条') : '这条已经记过了');
+};
+$('#btnMemNow').onclick = function () { readSettings(); Settings.save(); autoExtractMemory(true); };
+$('#btnMemClear').onclick = function () {
+  if (!confirm('确定清空她所有的记忆？')) return;
+  Memory.clear(); renderMemory(); toast('记忆已清空');
+};
+/* ---- 背景 / 头像 ---- */
+$('#btnPickBg').onclick = function () { pickNative('bg'); };
+$('#btnScanBg').onclick = function () { pickFromFolder('bg'); };
+$('#btnClearBg').onclick = function () { BG.setBg(''); toast('背景已清除'); };
+$('#btnPickAv').onclick = function () { pickNative('av'); };
+$('#btnClearAv').onclick = function () { BG.setAv(''); toast('头像已清除'); };
+$('#btnBgQuick').onclick = function () { closeDrawer(); openSettings('look'); };
+$('#btnClosePicker').onclick = function () { $('#pickerModal').classList.remove('open'); };
+$('#pickerModal').onclick = function (e) { if (e.target.id === 'pickerModal') $('#pickerModal').classList.remove('open'); };
+/* ---- 外观滑杆实时预览 ---- */
+function liveLook() {
+  const s = Settings.data;
+  s.bgDim = (parseInt($('#fDim').value, 10) || 0) / 100;
+  s.bgBlur = parseInt($('#fBlur').value, 10) || 0;
+  s.bubbleAlpha = (parseInt($('#fAlpha').value, 10) || 0) / 100;
+  $('#fDimVal').textContent = $('#fDim').value + '%';
+  $('#fBlurVal').textContent = $('#fBlur').value + 'px';
+  $('#fAlphaVal').textContent = $('#fAlpha').value + '%';
+  BG.apply();
+}
+$('#fDim').oninput = liveLook; $('#fBlur').oninput = liveLook; $('#fAlpha').oninput = liveLook;
+$('#fDark').onchange = function () { Settings.data.dark = $('#fDark').checked; applyTheme(); };
+
 els.send.onclick = send;
 els.input.addEventListener('input', autoGrow);
 els.input.addEventListener('keydown', e => {
@@ -770,12 +1303,13 @@ if (window.visualViewport) {
 
 /* ---------- 启动 ---------- */
 Settings.load();
+Memory.load();
 applyTheme();
 Store.load();
 renderSessionList();
 renderChat();
 autoGrow();
-if (!Settings.data.apiKey) setTimeout(openSettings, 350);
+if (!Settings.data.apiKey) setTimeout(function () { openSettings('api'); }, 350);
 </script>
 </body>
 </html>

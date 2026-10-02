@@ -51,4 +51,5 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-ktx:1.9.2")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
 }

@@ -1,151 +1,130 @@
-# DeepSeek Chat —— Android 对话 App
+# 我的露缇娜 · AI 虚拟人物聊天 App
 
-一个用 **DeepSeek 大模型** 驱动的 AI 对话软件。代码分两层：
+一个纯离线的 Android 聊天客户端，调用 **DeepSeek API**，把自己设定成一个有性格、有记忆、
+说话像真人的虚拟伙伴。App 内所有界面都在本地 `assets` 里，不发任何第三方请求（只直连 DeepSeek）。
 
-```
-DeepSeekChat/
-├── web/index.html                 ← 全部界面 + 逻辑（单文件，零依赖，可直接用浏览器打开）
-├── android/                       ← Android Studio 工程（WebView 原生壳 + OkHttp 直连）
-│   ├── settings.gradle.kts / build.gradle.kts / gradle.properties
-│   └── app/
-│       ├── build.gradle.kts
-│       ├── proguard-rules.pro
-│       └── src/main/
-│           ├── AndroidManifest.xml
-│           ├── assets/index.html               ← 由 web/index.html 同步而来
-│           ├── java/com/ttsmc/deepseekchat/MainActivity.kt
-│           └── res/ (图标 / 主题 / 字符串 / 备份规则)
-└── sync-web.sh                    ← 改完网页后跑一次，同步到 assets
-```
+> 名字、性格、头像、背景图、她怎么称呼你 —— 全部可以在 App 里改。
 
 ---
 
 ## 一、两种用法
 
-### A. 立刻体验（不用编译）
-把 `web/index.html` 传到手机，用**浏览器**打开即可。
-- 首次打开会弹出设置，填入 DeepSeek API Key（`sk-...`）保存。
-- 在浏览器里可以「添加到主屏幕」，当成 PWA 用。
-- ⚠️ 部分浏览器会因为 **CORS 跨域策略** 拦截对 `api.deepseek.com` 的请求。
-  如果「测试连接」失败并提示 CORS，请改用下面的 APK 方式。
-
-### B. 编译成 APK（推荐，无 CORS 问题）
-APK 版把网络请求放在 **Kotlin/OkHttp 原生层**，网页只负责画界面，因此：
-- 不受浏览器 CORS 限制；
-- API Key 保存在原生层，不会被网页脚本外泄。
+| 方式 | 怎么做 | 限制 |
+| --- | --- | --- |
+| **A. 直接看界面** | 用 Chrome 打开 `web/index.html` | 浏览器是 `file://` 源，调用 DeepSeek 会被 **CORS 拦掉**，只能看界面 |
+| **B. 编译成 APK**（推荐） | 见下面「三、编译」 | 网络请求走原生 OkHttp，不受 CORS 限制，API Key 不经过网页层 |
 
 ---
 
-## 二、编译 APK 的步骤
+## 二、目录结构
 
-### 1. 准备环境（一次性）
-- 安装 **Android Studio**（Hedgehog 或更新，自带 JDK 17 + Android SDK）
-  https://developer.android.com/studio
-- 或者只装命令行工具：JDK 17 + Android SDK（`sdkmanager "platforms;android-34" "build-tools;34.0.0"`）
-
-### 2. 打开工程
-Android Studio → **Open** → 选择本目录下的 `DeepSeekChat/android`（注意是 android 子目录，不是外层）。
-首次打开会自动下载 Gradle 与依赖，需要联网，约 3–10 分钟。
-
-> 工程没有附带 `gradle/wrapper/gradle-wrapper.jar`（二进制文件）。
-> Android Studio 打开时会提示缺少 wrapper，选择 **"Use Gradle from: gradle-wrapper.properties file"** 或让它自动生成即可；
-> 若用命令行，先在 `android/` 下执行 `gradle wrapper --gradle-version 8.7`。
-
-### 3. 同步网页（改过 web/index.html 才需要）
-```bash
-bash sync-web.sh
+```
+DeepSeekChat/
+├─ web/index.html                  ← 全部界面与逻辑（单文件，零依赖）
+├─ android/                        ← Android Studio 工程
+│  ├─ settings.gradle.kts / build.gradle.kts / gradle.properties
+│  └─ app/
+│     ├─ build.gradle.kts
+│     ├─ proguard-rules.pro
+│     └─ src/main/
+│        ├─ AndroidManifest.xml
+│        ├─ assets/index.html      ← 由 sync-web.sh 从 web/ 复制
+│        ├─ java/com/ttsmc/deepseekchat/MainActivity.kt
+│        └─ res/  (图标 / 主题 / 颜色 / 备份规则)
+├─ .github/workflows/build-apk.yml ← 云端自动编译
+└─ sync-web.sh                     ← 改完 web/index.html 后执行
 ```
 
-### 4. 出包
-- 调试包：`./gradlew :app:assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`
-- 发布包：Android Studio → Build → Generate Signed App Bundle / APK，自建 keystore 后选 `release`。
-- 命令行出未签名 release：`./gradlew :app:assembleRelease`
+---
 
-### 5. 安装
-把 APK 传到手机点击安装（需允许「安装未知来源应用」）。
+## 三、编译
+
+### 用 Android Studio（需要电脑）
+
+1. 装 Android Studio（自带 JDK 17）。
+2. **Open** 选 `DeepSeekChat/android` 这个**内层**目录（不是外层）。
+3. 首次打开会提示下载 Gradle 8.7 与依赖，等它跑完。
+4. 菜单 **Build → Build App Bundle(s) / APK(s) → Build APK(s)**。
+5. 产物：`android/app/build/outputs/apk/debug/app-debug.apk`
+
+> 仓库里**没有带 gradle wrapper 的 jar**（生成环境无网络）。Android Studio 会自动补齐；
+> 命令行环境可以执行 `gradle wrapper --gradle-version 8.7` 自己生成。
+
+### 用 GitHub Actions（不需要电脑）
+
+推送到 `main` 分支即自动编译，成功后到仓库 **Actions → 最新一次运行 → 页面底部 Artifacts**
+下载 `DeepSeekChat-apk`，解压得到 `app-debug.apk`。
+
+工作流还会把编译产物和日志推到一个临时分支 `ci-log`，方便无浏览器环境下取回。
 
 ---
 
-## 三、功能清单
+## 四、功能
 
-| 功能 | 说明 |
-|---|---|
-| 多轮对话 | 完整上下文，自动带上历史消息 |
-| 流式输出 | SSE 打字机效果，可随时中断 |
-| 双模型切换 | `deepseek-chat`（V3，快）/ `deepseek-reasoner`（R1，深度推理） |
-| 思考过程 | reasoner 的 `reasoning_content` 折叠展示 |
-| Markdown 渲染 | 标题 / 列表 / 引用 / 表格 / 链接 / 粗斜体，内置零依赖实现 |
-| 代码块 | 语言标签 + 一键复制 |
-| 会话管理 | 多会话列表、新建、删除、自动命名、localStorage 持久化 |
-| 参数可调 | temperature、max_tokens、system prompt、流式开关 |
-| 深浅主题 | 一键切换 |
-| 导入导出 | 全量会话 + 设置导出为 JSON，可再导入 |
-| 安全 | 请求走原生层；HTML 全量转义，`javascript:` 链接被拦截 |
+| 需求 | 实现 |
+| --- | --- |
+| 虚拟人物聊天 | 人设驱动的 system prompt；界面按"她"来组织（头像、名称、空状态问候语） |
+| 性格自定义 | 设置 → **角色**：她的名字 / 她怎么称呼你 / **性格设定**（自由文本）/ 6 套一键预设 / 补充设定 |
+| 名称「我的露缇娜」 | App 名、顶栏标题、抽屉标题全部跟随设置里的名字 |
+| 聊天背景图 | 设置 → **外观**：`从相册选`（SAF）或 `读 TTSMC/1`（扫描 `/sdcard/TTSMC/1/`）；可调暗化 / 模糊 / 气泡不透明度 |
+| 记忆功能 | localStorage `dschat.memory.v1`；每轮对话后台自动整理出"关于你的事实"写进长期记忆，下一轮拼进 system prompt；可在设置 → **记忆**里增删改 |
+| 说话像真人 | 11 条"说话方式"硬规则（禁止 Markdown、限制句数、禁止 AI 腔…）+ `humanize()` 二次清洗模型仍输出的 Markdown |
+
+其它：多会话、流式输出打字机效果、深度推理（reasoner）思考过程折叠、一键重新生成、
+导出/导入全部数据、深浅主题、代码块高亮与复制、刘海屏安全区适配。
 
 ---
 
-## 四、技术要点
+## 五、技术要点
 
-### 为什么不用网页直接请求？
-`file:///android_asset/index.html` 是本地源，直接 `fetch("https://api.deepseek.com/...")`
-属于跨源请求，浏览器/WebView 会先发 `OPTIONS` 预检，DeepSeek 不返回 CORS 头 → 被拦截。
-所以原生壳里由 `MainActivity` 用 OkHttp 发请求。
+- **为什么不在网页里直接 fetch**：`file://` 源调 `https://api.deepseek.com` 是跨源请求，
+  预检必被 CORS 拦。因此**网络层放在 Kotlin/OkHttp**，JS 只通过 `@JavascriptInterface` 拿增量。
+- **JS ↔ Kotlin 协议**
 
-### JS ↔ Kotlin 协议
-```
-JS   -> Kotlin : DeepSeekBridge.startStream(reqId, baseUrl, apiKey, payloadJson)
-                 DeepSeekBridge.abort(reqId)
-                 DeepSeekBridge.openUrl(url)
-Kotlin -> JS   : window.__bridge.onOpen(reqId)
-                 window.__bridge.onReason(reqId, text)     // 思考过程
-                 window.__bridge.onDelta(reqId, text)      // 正文增量
-                 window.__bridge.onDone(reqId)
-                 window.__bridge.onError(reqId, message)
-```
-- `web/index.html` 里的 `Bridge.available()` 会自动探测是否在 APK 中运行，
-  有原生桥走原生，没有则退回浏览器 `fetch`。所以**同一份 HTML 两种环境都能跑**。
-- token 增量在 Kotlin 侧按 **45ms 合批**后再 `evaluateJavascript` 回推，避免每个 token 一次跨语言调用。
-
-### 关键实现位置
-- `web/index.html` → `renderMarkdown()`：零依赖 Markdown 渲染器（含未闭合围栏代码块的流式容错）
-- `web/index.html` → `fetchStream()`：SSE 逐行解析，识别 `data:` / `[DONE]` / `finish_reason`
-- `MainActivity.kt` → `Bridge.startStream()`：OkHttp 异步流式请求入口
-- `MainActivity.kt` → `readSse()`：`data:` 行解析，取 `delta.content` 与 `delta.reasoning_content`
-- `MainActivity.kt` → `Streamer`：45ms 合批回推
-- `proguard-rules.pro`：必须保留 `@JavascriptInterface` 方法，否则 release 混淆后 JS 桥失效
-
-### 关键参数
-- `baseUrl`: `https://api.deepseek.com`（代码会自动补 `/chat/completions`）
-- `deepseek-reasoner` **不接受** `temperature`，代码已自动省略该字段
-- OkHttp `readTimeout = 0`（SSE 长连接不能设读超时）
-- `minSdk 24` / `targetSdk 34` / `compileSdk 34` / JDK 17
+  JS → Kotlin：
+  ```
+  startStream(reqId, baseUrl, apiKey, payloadJson)   // SSE 流式对话
+  abort(reqId)
+  openUrl(url)
+  requestImagePermission()                            // 申请相册/存储权限
+  pickImage(reqId)                                    // 打开系统相册
+  listImages(dir) -> JSON 数组字符串（同步返回）       // 扫描目录里的图片
+  loadImage(reqId, absolutePath)                      // 解码+压缩后回推
+  ```
+  Kotlin → JS：
+  ```
+  window.__bridge.onOpen / onReason / onDelta / onDone / onError (reqId[, text])
+  window.__bridge.onImage(reqId, dataUrlOrNull)
+  ```
+- **45 ms 合批**：网络线程把 token 追加进 `StringBuilder`，主线程每 45 ms 取一次增量，
+  用游标只发新增部分，避免每个 token 都 `evaluateJavascript`。
+- **图片管线**：`BitmapFactory` 两段式采样（先 `inJustDecodeBounds` 读尺寸，再 `inSampleSize`）
+  → `ExifInterface` 摆正 → 最长边缩到 1440 → JPEG q82 → base64 dataURL 回给 JS 存 localStorage。
+  手机上原图动辄 5–12 MB，压完通常几十 KB。
+- **`deepseek-reasoner` 不接受 `temperature`**：`buildRequest()` 里判了模型名才带采样参数。
+- **`readTimeout(0)`**：SSE 是长连接，设了读超时会在思考阶段被掐断。
+- **proguard**：release 开了混淆，规则里 `-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }`
+  保证桥方法不被裁掉。
+- 版本：`compileSdk 34 / minSdk 24 / targetSdk 34`，Java/Kotlin 17，AGP 8.5.2，Gradle 8.7。
+  依赖：appcompat 1.7.0、core-ktx 1.13.1、okhttp 4.12.0、exifinterface 1.3.7。
 
 ---
 
-## 五、常见问题
+## 六、常见问题
 
-**Q: 提示「API 错误 401」**
-Key 填错或未生效。到 platform.deepseek.com → API keys 重新生成，注意 `sk-` 前缀和空格。
+**Q：装好后打开是空白？**
+release 版开了混淆，JavascriptInterface 被裁掉会白屏；用仓库里的 `proguard-rules.pro`。debug 版不受影响。
 
-**Q: 提示「API 错误 402 / Insufficient Balance」**
-DeepSeek 账户余额不足，需要充值。
+**Q：发送报 401 / 402？**
+401 是 API Key 不对；402 是账户余额不足。设置 → 接口里填 `sk-` 开头的 Key。
 
-**Q: release 包安装后白屏 / 按钮没反应**
-R8 把 JS 桥方法删了。确认 `proguard-rules.pro` 里的
-`-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }` 生效。
+**Q：提示"读 TTSMC/1 里没有图片"？**
+先确认 `/sdcard/TTSMC/1/` 里确实有图；再确认给了"照片和视频"权限。
+Android 13+ 要 `READ_MEDIA_IMAGES`，12 及以下要 `READ_EXTERNAL_STORAGE`。
 
-**Q: 键盘弹出遮挡输入框**
-已在 manifest 设 `windowSoftInputMode="adjustResize"`；若厂商 ROM 异常，可在设置里改用悬浮输入。
+**Q：记忆会不会乱？**
+自动整理只抽取"稳定事实"（名字、工作、宠物、喜好、约定…），单条超过 60 字或重复的会被丢弃，
+总量上限 80 条。不满意可以直接在设置 → 记忆里改或删。
 
-**Q: 想换成本地/中转接口**
-在 App 设置里把 Base URL 改成你的地址即可（需兼容 OpenAI 的 `/chat/completions` 协议）。
-注意 HTTP 明文地址会被系统拦截，App 已设 `usesCleartextTraffic="false"`，请用 HTTPS。
-
----
-
-## 六、可继续扩展的方向
-- 语音输入（Android `SpeechRecognizer`，再加一个 `@JavascriptInterface`）
-- 图片/文件上传（需换成 `deepseek-vl` 或多模态接口）
-- 联网搜索（接第三方搜索 API，做 RAG）
-- 会话云同步（后端 + 账号）
-- 字号调节、消息长按菜单、Prompt 模板库
+**Q：换成中转接口？**
+改 Base URL 即可，但必须是 **HTTPS**（Manifest 里 `usesCleartextTraffic="false"`）。

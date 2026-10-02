@@ -1,0 +1,9 @@
+*.apk
+*.aab
+*.zip
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+ci-logs/

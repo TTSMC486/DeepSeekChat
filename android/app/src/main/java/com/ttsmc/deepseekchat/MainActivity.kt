@@ -1,12 +1,19 @@
 package com.ttsmc.deepseekchat
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.Matrix
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.ConsoleMessage
@@ -18,6 +25,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.exifinterface.media.ExifInterface
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -25,7 +34,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -43,6 +55,8 @@ import java.util.concurrent.TimeUnit
  *   JS  -> Kotlin : startStream(reqId, baseUrl, apiKey, payloadJson)
  *                   abort(reqId)
  *                   openUrl(url)
+ *                   requestImagePermission() / pickImage(reqId) / listImages(dir)
+ *                   loadImage(reqId, absolutePath)
  *   Kotlin -> JS  : window.__bridge.onOpen(reqId)
  *                   window.__bridge.onReason(reqId, text)
  *                   window.__bridge.onDelta(reqId, text)
@@ -66,6 +80,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val JSON_TYPE = "application/json; charset=utf-8".toMediaType()
+
+    /** 相册选图：等待结果的 JS 回调 id */
+    private var pendingPickReq: String? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -193,6 +210,53 @@ class MainActivity : AppCompatActivity() {
             streams.remove(reqId)?.complete(null)   // 让 pump 自行收尾，不报错
         }
 
+        /* ---------- 图片：权限 / 相册 / 文件夹 / 解码 ---------- */
+
+        @JavascriptInterface
+        fun requestImagePermission() {
+            if (hasImagePermission()) return
+            main.post {
+                try { requestPermissions(neededImagePermissions(), REQ_IMG_PERM) }
+                catch (e: Exception) { Log.w(TAG, "requestPermissions failed", e) }
+            }
+        }
+
+        @JavascriptInterface
+        fun pickImage(reqId: String) {
+            pendingPickReq = reqId
+            main.post { launchImagePicker() }
+        }
+
+        /** 同步返回目录里的图片绝对路径（JSON 数组字符串） */
+        @JavascriptInterface
+        fun listImages(dir: String): String {
+            val arr = JSONArray()
+            if (!hasImagePermission()) return arr.toString()
+            try {
+                val d = File(dir)
+                if (!d.isDirectory) return arr.toString()
+                val ok = arrayOf(".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".heic", ".heif", ".jfif")
+                d.listFiles()
+                    ?.filter { it.isFile && ok.any { e -> it.name.lowercase().endsWith(e) } }
+                    ?.sortedBy { it.name.lowercase() }
+                    ?.forEach { arr.put(it.absolutePath) }
+            } catch (e: Exception) {
+                Log.w(TAG, "listImages failed: $dir", e)
+            }
+            return arr.toString()
+        }
+
+        /** 读取指定路径的图片，压到最长边 1440 / JPEG q82，回推 dataURL */
+        @JavascriptInterface
+        fun loadImage(reqId: String, path: String) {
+            Thread {
+                val data = try { decodeToDataUrl(path, null) } catch (e: Exception) {
+                    Log.w(TAG, "loadImage failed: $path", e); null
+                }
+                emitImage(reqId, data)
+            }.start()
+        }
+
         @JavascriptInterface
         fun openUrl(url: String) {
             try {
@@ -302,12 +366,141 @@ class MainActivity : AppCompatActivity() {
         web.post { try { web.evaluateJavascript(code, null) } catch (e: Exception) { Log.w(TAG, "eval failed", e) } }
     }
 
+    /* ==================== 图片处理 ==================== */
+
+    private fun neededImagePermissions(): Array<String> =
+        if (Build.VERSION.SDK_INT >= 33) arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
+        else arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+
+    private fun hasImagePermission(): Boolean = neededImagePermissions().all {
+        ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun launchImagePicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "image/*"
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            @Suppress("DEPRECATION")
+            startActivityForResult(intent, REQ_PICK_IMAGE)
+        } catch (e: Exception) {
+            Log.w(TAG, "no picker activity", e)
+            val id = pendingPickReq; pendingPickReq = null
+            emitImage(id, null)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQ_PICK_IMAGE) return
+        val id = pendingPickReq
+        pendingPickReq = null
+        if (id == null) return
+        val uri: Uri? = data?.data
+        if (resultCode != RESULT_OK || uri == null) { emitImage(id, null); return }
+        Thread {
+            val d = try { decodeToDataUrl(null, uri) } catch (e: Exception) {
+                Log.w(TAG, "decode picked image failed", e); null
+            }
+            emitImage(id, d)
+        }.start()
+    }
+
+    /**
+     * 解码 -> 按 EXIF 摆正 -> 最长边缩到 1440 -> JPEG(q82) -> base64 dataURL。
+     * 结果直接存进 JS 的 localStorage，所以体积要压到几十 KB 量级。
+     */
+    private fun decodeToDataUrl(path: String?, uri: Uri?): String? {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        try {
+            if (uri != null) contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+            else BitmapFactory.decodeFile(path, bounds)
+        } catch (e: Exception) {
+            Log.w(TAG, "decode bounds failed", e); return null
+        }
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+        var sample = 1
+        val longest = maxOf(bounds.outWidth, bounds.outHeight)
+        while (longest / (sample * 2) >= 1600) sample *= 2
+
+        val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+        val decoded: Bitmap = try {
+            if (uri != null) contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, opts) }
+            else BitmapFactory.decodeFile(path, opts)
+        } catch (e: Exception) {
+            null
+        } ?: return null
+
+        val uprightBmp = upright(decoded, path, uri)
+
+        val long2 = maxOf(uprightBmp.width, uprightBmp.height)
+        val finalBmp: Bitmap
+        if (long2 > MAX_IMAGE_EDGE) {
+            val sc = MAX_IMAGE_EDGE.toFloat() / long2
+            finalBmp = Bitmap.createScaledBitmap(
+                uprightBmp,
+                (uprightBmp.width * sc).toInt().coerceAtLeast(1),
+                (uprightBmp.height * sc).toInt().coerceAtLeast(1),
+                true
+            )
+            if (finalBmp !== uprightBmp) uprightBmp.recycle()
+        } else {
+            finalBmp = uprightBmp
+        }
+
+        val out = ByteArrayOutputStream()
+        finalBmp.compress(Bitmap.CompressFormat.JPEG, 82, out)
+        val bytes = out.toByteArray()
+        finalBmp.recycle()
+        return "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
+    }
+
+    /** 手机拍的竖图 EXIF 里有旋转信息，BitmapFactory 不会自动摆正 */
+    private fun upright(src: Bitmap, path: String?, uri: Uri?): Bitmap {
+        val deg = try {
+            val ei = if (uri != null) {
+                contentResolver.openInputStream(uri)?.use { ExifInterface(it) }
+            } else {
+                path?.let { ExifInterface(it) }
+            }
+            when (ei?.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> 90
+                ExifInterface.ORIENTATION_ROTATE_180 -> 180
+                ExifInterface.ORIENTATION_ROTATE_270 -> 270
+                else -> 0
+            }
+        } catch (e: Exception) { 0 }
+        if (deg == 0) return src
+        return try {
+            val m = Matrix().apply { postRotate(deg.toFloat()) }
+            Bitmap.createBitmap(src, 0, 0, src.width, src.height, m, true)
+                .also { if (it !== src) src.recycle() }
+        } catch (e: Exception) { src }
+    }
+
+    private fun emitImage(reqId: String?, dataUrl: String?) {
+        if (reqId.isNullOrEmpty()) return
+        val a = if (dataUrl == null) "null" else JSONObject.quote(dataUrl)
+        val code = "window.__bridge&&window.__bridge.onImage(${JSONObject.quote(reqId)},$a);"
+        web.post { try { web.evaluateJavascript(code, null) } catch (e: Exception) { Log.w(TAG, "emitImage failed", e) } }
+    }
+
     companion object {
         private const val TAG = "DeepSeekChat"
+        private const val REQ_IMG_PERM = 1001
+        private const val REQ_PICK_IMAGE = 1002
+        private const val MAX_IMAGE_EDGE = 1440
+
         private const val BACK_JS =
             "(function(){try{" +
             "var m=document.getElementById('settingsModal');" +
             "if(m&&m.classList.contains('open')){document.getElementById('btnCloseSettings').click();return 'handled';}" +
+            "var p=document.getElementById('pickerModal');" +
+            "if(p&&p.classList.contains('open')){document.getElementById('btnClosePicker').click();return 'handled';}" +
             "var d=document.getElementById('drawer');" +
             "if(d&&d.classList.contains('open')){document.getElementById('scrim').click();return 'handled';}" +
             "}catch(e){}return 'none';})()"
