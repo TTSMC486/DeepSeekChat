@@ -40,6 +40,8 @@ jobs:
             echo "----- java -----";  java -version 2>&1
             echo "----- gradle -----"; gradle --version 2>&1 | head -15
           } > ci-logs/diag.txt 2>&1
+          cp -f android/app/build/outputs/apk/debug/app-debug.apk ci-logs/DeepSeekChat-debug.apk 2>/dev/null || true
+          sha256sum ci-logs/DeepSeekChat-debug.apk >> ci-logs/diag.txt 2>/dev/null || true
           git config user.name  ci-bot
           git config user.email ci@localhost
           git checkout -B ci-log
