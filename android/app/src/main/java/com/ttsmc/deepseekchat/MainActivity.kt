@@ -257,6 +257,17 @@ class MainActivity : AppCompatActivity() {
             }.start()
         }
 
+        /** 目录预览用的小缩略图（最长边 320、q70），避免 WebView 下 file:// 缩略图被 CORS 拦。 */
+        @JavascriptInterface
+        fun thumb(reqId: String, path: String) {
+            Thread {
+                val data = try { decodeToDataUrl(path, null, MAX_THUMB_EDGE, 70) } catch (e: Exception) {
+                    Log.w(TAG, "thumb failed: $path", e); null
+                }
+                emitImage(reqId, data)
+            }.start()
+        }
+
         @JavascriptInterface
         fun openUrl(url: String) {
             try {
@@ -413,7 +424,12 @@ class MainActivity : AppCompatActivity() {
      * 解码 -> 按 EXIF 摆正 -> 最长边缩到 1440 -> JPEG(q82) -> base64 dataURL。
      * 结果直接存进 JS 的 localStorage，所以体积要压到几十 KB 量级。
      */
-    private fun decodeToDataUrl(path: String?, uri: Uri?): String? {
+    private fun decodeToDataUrl(
+        path: String?,
+        uri: Uri?,
+        maxEdge: Int = MAX_IMAGE_EDGE,
+        quality: Int = 82
+    ): String? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         try {
             if (uri != null) contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
@@ -439,8 +455,8 @@ class MainActivity : AppCompatActivity() {
 
         val long2 = maxOf(uprightBmp.width, uprightBmp.height)
         val finalBmp: Bitmap
-        if (long2 > MAX_IMAGE_EDGE) {
-            val sc = MAX_IMAGE_EDGE.toFloat() / long2
+        if (long2 > maxEdge) {
+            val sc = maxEdge.toFloat() / long2
             finalBmp = Bitmap.createScaledBitmap(
                 uprightBmp,
                 (uprightBmp.width * sc).toInt().coerceAtLeast(1),
@@ -453,7 +469,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val out = ByteArrayOutputStream()
-        finalBmp.compress(Bitmap.CompressFormat.JPEG, 82, out)
+        finalBmp.compress(Bitmap.CompressFormat.JPEG, quality, out)
         val bytes = out.toByteArray()
         finalBmp.recycle()
         return "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP)
@@ -494,6 +510,7 @@ class MainActivity : AppCompatActivity() {
         private const val REQ_IMG_PERM = 1001
         private const val REQ_PICK_IMAGE = 1002
         private const val MAX_IMAGE_EDGE = 1440
+        private const val MAX_THUMB_EDGE = 320
 
         private const val BACK_JS =
             "(function(){try{" +

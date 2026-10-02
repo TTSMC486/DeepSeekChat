@@ -307,14 +307,6 @@ body.has-bg #drawer,body.has-bg .sheet,body.has-bg .picker{background:var(--bar-
   </div>
 </div>
 
-<div class="pickerwrap" id="imgPicker">
-  <div class="picker">
-    <h4>选一张图</h4>
-    <div class="pickergrid" id="pickerGrid"></div>
-    <div class="foot"><button class="btn" id="btnPickerClose">取消</button></div>
-  </div>
-</div>
-
 <div class="modal" id="pickerModal">
   <div class="sheet">
     <h3><span id="pickerTitle">选择图片</span> <button class="btn small" id="btnClosePicker">关闭</button></h3>
@@ -729,6 +721,13 @@ const Bridge = {
     try { window.DeepSeekBridge.pickImage(id); } catch (e) { delete this._img[id]; return Promise.resolve(null); }
     return p;
   },
+  thumb(path) {
+    if (!window.DeepSeekBridge || !window.DeepSeekBridge.thumb) return Promise.resolve(null);
+    const id = uid();
+    const p = this.ask(id);
+    try { window.DeepSeekBridge.thumb(id, path); } catch (e) { delete this._img[id]; return Promise.resolve(null); }
+    return p;
+  },
   listImages(dir) {
     try { return JSON.parse(window.DeepSeekBridge.listImages(dir) || '[]') || []; }
     catch (e) { return []; }
@@ -915,7 +914,9 @@ function emptyState() {
 function renderChat() {
   const s = Store.cur(); if (!s) return;
   els.main.innerHTML = '';
-  els.title.textContent = '我的' + ((Settings.data.charName || '露缇娜').trim() || '露缇娜');
+  const nm = (Settings.data.charName || '露缇娜').trim() || '露缇娜';
+  els.title.textContent = '我的' + nm;
+  const dn = $('#drawerName'); if (dn) dn.textContent = '我的' + nm;
   els.chip.textContent = Settings.data.model;
   if (!s.messages.length) { els.main.appendChild(emptyState()); return; }
   s.messages.forEach((m, i) => els.main.appendChild(messageEl(m, i)));
@@ -1115,9 +1116,8 @@ async function pickFromFolder(kind) {
   $('#pickerModal').classList.add('open');
   paths.forEach(function (p) {
     const it = document.createElement('div'); it.className = 'it';
-    const im = document.createElement('img'); im.loading = 'lazy';
-    im.onerror = function () { im.style.display = 'none'; };
-    im.src = 'file://' + p;
+    const im = document.createElement('img'); im.loading = 'lazy'; im.alt = '';
+    Bridge.thumb(p).then(function (d) { if (d) im.src = d; else im.style.display = 'none'; });
     const nm = document.createElement('span'); nm.textContent = p.split('/').pop();
     it.appendChild(im); it.appendChild(nm);
     it.onclick = async function () {
