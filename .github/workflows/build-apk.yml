@@ -10,6 +10,8 @@ permissions:
 
 jobs:
   build:
+    # [skip ci] 提交只用来补文件，不触发构建
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +20,24 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Ensure stable debug keystore
+        run: |
+          if [ ! -f android/app/debug.keystore ]; then
+            echo "keystore 不存在，生成一把并提交回 main"
+            keytool -genkeypair -v \
+              -keystore android/app/debug.keystore \
+              -storepass android -keypass android \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+            git config user.name  ci-bot
+            git config user.email ci@localhost
+            git add -f android/app/debug.keystore
+            git commit -m "ci: 生成固定签名用的 debug.keystore [skip ci]"
+            git push origin HEAD:main || echo "推送失败（可能已被别的运行抢先），本仓库仍用本地这把"
+          else
+            echo "keystore 已存在，继续使用"
+          fi
 
       - uses: gradle/actions/setup-gradle@v3
         with:

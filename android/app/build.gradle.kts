@@ -15,10 +15,25 @@ android {
         versionName = "1.0"
     }
 
+    // CI 首次构建时生成并提交 android/app/debug.keystore，
+    // 之后每次都用同一把钥匙签名 —— 这样新版能直接覆盖升级，不用卸载重装。
+    signingConfigs {
+        val ks = file("debug.keystore")
+        if (ks.exists()) {
+            create("stable") {
+                storeFile = ks
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             isMinifyEnabled = false
+            if (file("debug.keystore").exists()) signingConfig = signingConfigs.getByName("stable")
         }
         release {
             isMinifyEnabled = true
