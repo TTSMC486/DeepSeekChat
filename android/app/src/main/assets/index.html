@@ -1109,6 +1109,11 @@ async function pickNative(kind) {
 async function pickFromFolder(kind) {
   const DIR = '/storage/emulated/0/TTSMC/1';
   if (!Bridge.hasImg() || !window.DeepSeekBridge.listImages) { toast('读取手机文件夹需要 APK 版'); return; }
+  if (window.DeepSeekBridge.canReadImages && !window.DeepSeekBridge.canReadImages()) {
+    try { window.DeepSeekBridge.requestImagePermission(); } catch (e) {}
+    toast('需要「照片和视频」权限，授权后再点一次');
+    return;
+  }
   const paths = Bridge.listImages(DIR);
   if (!paths.length) { toast('文件夹 TTSMC/1 里没有图片，或没有存储权限'); return; }
   const list = $('#pickList'); list.innerHTML = '';

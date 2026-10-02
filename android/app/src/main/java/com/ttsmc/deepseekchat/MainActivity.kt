@@ -227,6 +227,10 @@ class MainActivity : AppCompatActivity() {
             main.post { launchImagePicker() }
         }
 
+        /** 同步返回是否已拿到读图权限，供 JS 决定要不要先弹授权框 */
+        @JavascriptInterface
+        fun canReadImages(): Boolean = hasImagePermission()
+
         /** 同步返回目录里的图片绝对路径（JSON 数组字符串） */
         @JavascriptInterface
         fun listImages(dir: String): String {
@@ -403,7 +407,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @Suppress("DEPRECATION")
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != REQ_PICK_IMAGE) return
