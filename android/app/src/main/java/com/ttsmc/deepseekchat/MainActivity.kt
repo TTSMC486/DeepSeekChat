@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity() {
 
         web.webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(m: ConsoleMessage): Boolean {
-                Log.d(TAG, "console: ${m.message()} @${m.lineNumber}")
+                Log.d(TAG, "console: ${m.message()} @${m.lineNumber()}")
                 return true
             }
         }
