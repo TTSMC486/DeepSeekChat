@@ -288,6 +288,7 @@ body.has-bg #drawer,body.has-bg .sheet,body.has-bg .picker{background:var(--bar-
       <div class="field">
         <label>API Key</label>
         <input type="password" id="fApiKey" placeholder="sk-..." autocomplete="off" spellcheck="false">
+        <div class="hint" id="keyHint"></div>
         <div class="hint">在 platform.deepseek.com → API keys 创建。仅保存在本机，不会上传到任何第三方。</div>
       </div>
       <div class="field"><label>接口地址 (Base URL)</label><input type="text" id="fBaseUrl" placeholder="https://api.deepseek.com" spellcheck="false"></div>
@@ -482,6 +483,27 @@ function buildSystemPrompt() {
 }
 
 /* 去掉模型仍然输出的 Markdown 记号，让它像人打的字 */
+/* 把 Key 打成 sk-****4878 · 35 字符，方便用户自查有没有少复制 */
+function keyInfo(k) {
+  const v = String(k == null ? Settings.data.apiKey : k) || '';
+  if (!v) return '（未填写）';
+  return (v.length > 8 ? v.slice(0, 3) + '****' + v.slice(-4) : '****') + ' · ' + v.length + ' 字符';
+}
+
+/* 把接口的英文报错翻译成人话，401/402 是最常见的两种 */
+function friendlyError(m) {
+  const s = String((m && m.message) || m || '');
+  if (/\b401\b/.test(s) || /Authentication Fails/i.test(s))
+    return 'API Key 无效 —— DeepSeek 拒绝了 ' + keyInfo() + '。\n' +
+           '请到 platform.deepseek.com → API keys 删掉旧的、重新创建一个，' +
+           '整串复制（sk- 开头，通常 35 个字符），粘贴后点保存。';
+  if (/\b402\b/.test(s) || /Insufficient Balance/i.test(s))
+    return '账户余额不足 —— 请到 platform.deepseek.com 充值后再试。';
+  if (/\b429\b/.test(s)) return '请求太频繁或达到限额，等一会儿再试。';
+  if (/\b404\b/.test(s)) return '接口地址不对，Base URL 应为 https://api.deepseek.com';
+  return s;
+}
+
 function humanize(src) {
   const parts = String(src).split(/(```[\s\S]*?(?:```|$))/);
   return parts.map(function (p, i) {
@@ -625,7 +647,7 @@ async function requestOnce(payload) {
     let acc = '';
     await new Promise(function (resolve, reject) {
       Bridge.stream(uid(), payload, { open: function () {}, delta: function (t) { acc += t; },
-        reason: function () {}, done: resolve, error: function (m) { reject(new Error(m)); } });
+        reason: function () {}, done: resolve, error: function (m) { reject(new Error(friendlyError(m))); } });
     });
     return acc;
   }
@@ -996,7 +1018,7 @@ async function runCompletion() {
           delta: t => { killTyping(); onDelta(t); },
           reason: t => { killTyping(); onReason(t); },
           done: resolve,
-          error: m => reject(new Error(m))
+          error: m => reject(new Error(friendlyError(m)))
         });
       });
     } else {
@@ -1010,7 +1032,7 @@ async function runCompletion() {
     if (err && err.name === 'AbortError') {
       msg.content = acc || '（已停止生成）'; msg.reasoning = rea;
     } else {
-      msg.error = String((err && err.message) || err);
+      msg.error = friendlyError(err);
       msg.content = acc; msg.reasoning = rea;
     }
   } finally {
@@ -1149,7 +1171,8 @@ function closeDrawer() { els.drawer.classList.remove('open'); els.scrim.classLis
 
 function fillSettings() {
   const s = Settings.data;
-  $('#fApiKey').value = s.apiKey; $('#fBaseUrl').value = s.baseUrl; $('#fModel').value = s.model;
+  $('#fApiKey').value = s.apiKey; $('#fBaseUrl').value = s.baseUrl;
+  $('#keyHint').textContent = '当前：' + keyInfo(s.apiKey); $('#fModel').value = s.model;
   $('#fTemp').value = s.temperature; $('#fTempVal').textContent = parseFloat(s.temperature).toFixed(1);
   $('#fMaxTokens').value = s.maxTokens; $('#fSystem').value = s.systemPrompt || '';
   $('#fStream').checked = s.stream; $('#fDark').checked = s.dark; $('#fShowReason').checked = s.showReason;
@@ -1223,7 +1246,7 @@ $('#btnTest').onclick = async () => {
     if (Settings.data.model !== 'deepseek-reasoner') payload.temperature = 0;
     const reply = await requestOnce(payload);
     toast('连接成功 ✓ ' + String(reply).slice(0, 24));
-  } catch (e) { toast('失败：' + String((e && e.message) || e).slice(0, 90)); }
+  } catch (e) { alert(friendlyError(e)); }
   btn.disabled = false; btn.textContent = '测试连接';
 };
 $('#btnExport').onclick = () => {
@@ -1268,6 +1291,7 @@ $('#btnMemAdd').onclick = function () {
   renderMemory();
   toast(n ? ('加了 ' + n + ' 条') : '这条已经记过了');
 };
+$('#fApiKey').oninput = function () { $('#keyHint').textContent = '当前：' + keyInfo(this.value); };
 $('#btnMemNow').onclick = function () { readSettings(); Settings.save(); autoExtractMemory(true); };
 $('#btnMemClear').onclick = function () {
   if (!confirm('确定清空她所有的记忆？')) return;

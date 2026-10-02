@@ -116,7 +116,12 @@ DeepSeekChat/
 release 版开了混淆，JavascriptInterface 被裁掉会白屏；用仓库里的 `proguard-rules.pro`。debug 版不受影响。
 
 **Q：发送报 401 / 402？**
-401 是 API Key 不对；402 是账户余额不足。设置 → 接口里填 `sk-` 开头的 Key。
+设置 → **接口** 里 API Key 输入框下方现在会实时显示 `当前：sk-****4878 · 35 字符`。
+
+- **长度不是 35 左右** → 你没复制全，回 platform.deepseek.com 重新复制整串。
+- **长度对但报 401** → 这把 Key 已被删除或停用（DeepSeek 控制台里删过、或账号风控）。
+  重新创建一个新的即可。注意 Key 只在创建时显示一次，关掉弹窗就再也看不到完整串了。
+- **402** → 账户余额不足，去 platform.deepseek.com 充值。
 
 **Q：提示"读 TTSMC/1 里没有图片"？**
 先确认 `/sdcard/TTSMC/1/` 里确实有图；再确认给了"照片和视频"权限。
