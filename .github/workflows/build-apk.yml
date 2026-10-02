@@ -43,6 +43,12 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Sync web assets
+        run: |
+          cp -f web/index.html android/app/src/main/assets/index.html
+          echo "assets/index.html = $(wc -c < android/app/src/main/assets/index.html) bytes"
+          echo "web/index.html    = $(wc -c < web/index.html) bytes"
+
       - name: Build debug APK
         id: build
         run: |

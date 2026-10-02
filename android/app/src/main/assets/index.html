@@ -483,11 +483,23 @@ function buildSystemPrompt() {
 }
 
 /* 去掉模型仍然输出的 Markdown 记号，让它像人打的字 */
+/* HTTP header 只能放可见 ASCII。中文输入法、网页复制经常带进 NBSP(U+00A0)、
+   零宽空格(U+200B)、全角字符 —— trim() 清不掉它们，塞进 header 会让 OkHttp
+   抛 IllegalArgumentException，在 WebView 里就变成
+   "Java exception was raised during method invocation"。这里一律滤掉。*/
+function cleanAscii(s) {
+  const raw = String(s == null ? '' : s);
+  const kept = raw.replace(/[^\x20-\x7E]/g, '');
+  return { value: kept.trim(), removed: raw.length - kept.length };
+}
+
 /* 把 Key 打成 sk-****4878 · 35 字符，方便用户自查有没有少复制 */
 function keyInfo(k) {
-  const v = String(k == null ? Settings.data.apiKey : k) || '';
-  if (!v) return '（未填写）';
-  return (v.length > 8 ? v.slice(0, 3) + '****' + v.slice(-4) : '****') + ' · ' + v.length + ' 字符';
+  const c = cleanAscii(k == null ? Settings.data.apiKey : k);
+  const v = c.value;
+  if (!v) return c.removed ? '（只剩不可见字符，已清空）' : '（未填写）';
+  const tail = c.removed ? '  ⚠ 已自动滤掉 ' + c.removed + ' 个不可见字符' : '';
+  return (v.length > 8 ? v.slice(0, 3) + '****' + v.slice(-4) : '****') + ' · ' + v.length + ' 字符' + tail;
 }
 
 /* 把接口的英文报错翻译成人话，401/402 是最常见的两种 */
@@ -764,6 +776,10 @@ window.__bridge = {
   onImage: function (id, dataUrl) {
     const f = Bridge._img[id]; delete Bridge._img[id];
     if (f) f(dataUrl || null);
+  },
+  onBridgeError: function (where, msg) {
+    try { console.error('[bridge]', where, msg); } catch (e) {}
+    toast('内部错误 · ' + String(msg || where).slice(0, 120));
   },
   onImgList: function (id, json) {
     const f = Bridge._img[id]; delete Bridge._img[id];
@@ -1199,8 +1215,8 @@ function openSettings(tab) {
 function closeSettings() { $('#settingsModal').classList.remove('open'); }
 function readSettings() {
   const s = Settings.data;
-  s.apiKey = $('#fApiKey').value.trim();
-  s.baseUrl = $('#fBaseUrl').value.trim() || DEF_SETTINGS.baseUrl;
+  s.apiKey = cleanAscii($('#fApiKey').value).value;
+  s.baseUrl = cleanAscii($('#fBaseUrl').value).value;
   s.model = $('#fModel').value;
   s.temperature = parseFloat($('#fTemp').value) || 0;
   s.maxTokens = parseInt($('#fMaxTokens').value, 10) || 4096;
