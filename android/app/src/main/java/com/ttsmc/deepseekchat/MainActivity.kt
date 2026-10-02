@@ -163,17 +163,32 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun startStream(reqId: String, baseUrl: String, apiKey: String, payload: String) {
+          try {
             if (streams.containsKey(reqId)) { emit(reqId, "onError", "重复的请求 ID"); return }
             val st = Streamer(reqId)
             streams[reqId] = st
             st.start()
 
             val streamMode = try { JSONObject(payload).optBoolean("stream", true) } catch (e: Exception) { true }
-            val url = baseUrl.trim().trimEnd('/') + "/chat/completions"
+
+            // 只放行可见 ASCII（0x21-0x7E）。中文、全角、零宽字符、NBSP 混进
+            // HTTP header 会让 OkHttp 抛 IllegalArgumentException —— 在 WebView 里
+            // 就表现为 "Java exception was raised during method invocation"。
+            val safeUrl = baseUrl.filter { it.code in 0x21..0x7E }.trimEnd('/')
+            val safeKey = apiKey.filter { it.code in 0x21..0x7E }
+            val url = safeUrl + "/chat/completions"
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                emit(reqId, "onError", "接口地址无效：「" + safeUrl + "」不是 http(s) 开头的完整地址")
+                return
+            }
+            if (safeKey.isEmpty()) {
+                emit(reqId, "onError", "API Key 是空的（或里面只有看不见的字符），请在设置里重新粘贴")
+                return
+            }
 
             val reqBuilder = Request.Builder()
                 .url(url)
-                .header("Authorization", "Bearer $apiKey".replace("\n", "").replace("\r", ""))
+                .header("Authorization", "Bearer " + safeKey)
                 .header("Accept", if (streamMode) "text/event-stream" else "application/json")
                 .post(payload.toRequestBody(JSON_TYPE))
 
@@ -202,41 +217,52 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             })
+          } catch (e: Throwable) {
+            reportBridgeError("startStream", e)
+            emit(reqId, "onError", "请求构造失败：" + (e.message ?: e.javaClass.simpleName))
+          }
         }
 
         @JavascriptInterface
         fun abort(reqId: String) {
-            calls.remove(reqId)?.cancel()
-            streams.remove(reqId)?.complete(null)   // 让 pump 自行收尾，不报错
+            try {
+                calls.remove(reqId)?.cancel()
+                streams.remove(reqId)?.complete(null)   // 让 pump 自行收尾，不报错
+            } catch (e: Throwable) { reportBridgeError("abort", e) }
         }
 
         /* ---------- 图片：权限 / 相册 / 文件夹 / 解码 ---------- */
 
         @JavascriptInterface
         fun requestImagePermission() {
-            if (hasImagePermission()) return
-            main.post {
-                try { requestPermissions(neededImagePermissions(), REQ_IMG_PERM) }
-                catch (e: Exception) { Log.w(TAG, "requestPermissions failed", e) }
-            }
+            try {
+                if (hasImagePermission()) return
+                main.post {
+                    try { requestPermissions(neededImagePermissions(), REQ_IMG_PERM) }
+                    catch (e: Exception) { Log.w(TAG, "requestPermissions failed", e) }
+                }
+            } catch (e: Throwable) { reportBridgeError("requestImagePermission", e) }
         }
 
         @JavascriptInterface
         fun pickImage(reqId: String) {
-            pendingPickReq = reqId
-            main.post { launchImagePicker() }
+            try {
+                pendingPickReq = reqId
+                main.post { launchImagePicker() }
+            } catch (e: Throwable) { reportBridgeError("pickImage", e); emitImage(reqId, null) }
         }
 
         /** 同步返回是否已拿到读图权限，供 JS 决定要不要先弹授权框 */
         @JavascriptInterface
-        fun canReadImages(): Boolean = hasImagePermission()
+        fun canReadImages(): Boolean =
+            try { hasImagePermission() } catch (e: Throwable) { reportBridgeError("canReadImages", e); false }
 
         /** 同步返回目录里的图片绝对路径（JSON 数组字符串） */
         @JavascriptInterface
         fun listImages(dir: String): String {
             val arr = JSONArray()
-            if (!hasImagePermission()) return arr.toString()
             try {
+                if (!hasImagePermission()) return arr.toString()
                 val d = File(dir)
                 if (!d.isDirectory) return arr.toString()
                 val ok = arrayOf(".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".heic", ".heif", ".jfif")
@@ -244,8 +270,8 @@ class MainActivity : AppCompatActivity() {
                     ?.filter { it.isFile && ok.any { e -> it.name.lowercase().endsWith(e) } }
                     ?.sortedBy { it.name.lowercase() }
                     ?.forEach { arr.put(it.absolutePath) }
-            } catch (e: Exception) {
-                Log.w(TAG, "listImages failed: $dir", e)
+            } catch (e: Throwable) {
+                reportBridgeError("listImages", e)
             }
             return arr.toString()
         }
@@ -253,23 +279,27 @@ class MainActivity : AppCompatActivity() {
         /** 读取指定路径的图片，压到最长边 1440 / JPEG q82，回推 dataURL */
         @JavascriptInterface
         fun loadImage(reqId: String, path: String) {
-            Thread {
-                val data = try { decodeToDataUrl(path, null) } catch (e: Exception) {
-                    Log.w(TAG, "loadImage failed: $path", e); null
-                }
-                emitImage(reqId, data)
-            }.start()
+            try {
+                Thread {
+                    val data = try { decodeToDataUrl(path, null) } catch (e: Throwable) {
+                        Log.w(TAG, "loadImage failed: $path", e); null
+                    }
+                    emitImage(reqId, data)
+                }.start()
+            } catch (e: Throwable) { reportBridgeError("loadImage", e); emitImage(reqId, null) }
         }
 
         /** 目录预览用的小缩略图（最长边 320、q70），避免 WebView 下 file:// 缩略图被 CORS 拦。 */
         @JavascriptInterface
         fun thumb(reqId: String, path: String) {
-            Thread {
-                val data = try { decodeToDataUrl(path, null, MAX_THUMB_EDGE, 70) } catch (e: Exception) {
-                    Log.w(TAG, "thumb failed: $path", e); null
-                }
-                emitImage(reqId, data)
-            }.start()
+            try {
+                Thread {
+                    val data = try { decodeToDataUrl(path, null, MAX_THUMB_EDGE, 70) } catch (e: Throwable) {
+                        Log.w(TAG, "thumb failed: $path", e); null
+                    }
+                    emitImage(reqId, data)
+                }.start()
+            } catch (e: Throwable) { reportBridgeError("thumb", e); emitImage(reqId, null) }
         }
 
         @JavascriptInterface
@@ -279,9 +309,25 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "openUrl failed: $url", e)
+            } catch (e: Throwable) {
+                reportBridgeError("openUrl", e)
             }
+        }
+    }
+
+    /** 桥方法里任何漏网的异常都会变成 WebView 的
+     *  "Java exception was raised during method invocation"，用户看不懂。
+     *  这里统一兜住：写 logcat，同时回推给 JS 弹提示。 */
+    private fun reportBridgeError(where: String, e: Throwable) {
+        Log.e(TAG, "bridge «$where» threw", e)
+        val payload = JSONObject.quote(where + " · " + e.javaClass.simpleName + ": " + (e.message ?: ""))
+        web.post {
+            try {
+                web.evaluateJavascript(
+                    "window.__bridge&&window.__bridge.onBridgeError&&window.__bridge.onBridgeError($payload);",
+                    null
+                )
+            } catch (ignored: Throwable) { }
         }
     }
 
